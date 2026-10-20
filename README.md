@@ -4,7 +4,7 @@ An offline toolkit for designing, building and flying RC planes. Everything runs
 
 | Page | What it does |
 |---|---|
-| `rc-plane-calculator.html` | Calculator: power system, wing loading and flight-time estimates, with explanations |
+| `index.html` | Calculator: power system, wing loading and flight-time estimates, with explanations |
 | `designer.html` | Aircraft Designer in 9 steps: sizing, airfoil, geometry, stability, wing analysis, performance, power system, 3D model, save and compare |
 | `build.html` | Printable build templates (foam/Depron or balsa; A4, A5 or Letter paper) and a parts list |
 | `guide.html` | Build guide and encyclopedia: every fundamental with live widgets, two worked Depron examples (trainer and flying wing) built step by step with the tools, and an A–Z glossary |
@@ -19,7 +19,7 @@ There's no build step, no server and no install. The pages are plain HTML with c
    git clone <your-repo-url> rc-calc
    ```
    You can also just copy the folder, for example from a USB stick or a zip file.
-2. Open `rc-plane-calculator.html` (or any other page; new builders should start with `guide.html`) by double-clicking it. You can also drag it into a browser window.
+2. Open `index.html` (or any other page; new builders should start with `guide.html`) by double-clicking it. You can also drag it into a browser window.
 
 That's it. It works without internet, straight from disk (`file://`).
 
@@ -29,7 +29,7 @@ That's it. It works without internet, straight from disk (`file://`).
 ```bash
 python3 -m http.server 8000
 ```
-Then browse to `http://<this-computer's-IP>:8000/rc-plane-calculator.html`.
+Then browse to `http://<this-computer's-IP>:8000/index.html`.
 
 ## Controllers (simulator)
 

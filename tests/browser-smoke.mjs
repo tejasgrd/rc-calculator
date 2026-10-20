@@ -36,7 +36,7 @@ function collect(){
     network:[...new Set(events.filter(e => e.method === 'Network.requestWillBeSent').map(e => e.params.request.url))].filter(u => !u.startsWith('file:') && !u.startsWith('data:') && !u.startsWith('blob:')) };
 }
 await size(1440, 900);
-await open('rc-plane-calculator.html'); await ev('localStorage.clear()'); await open('rc-plane-calculator.html');
+await open('index.html'); await ev('localStorage.clear()'); await open('index.html');
 results.calculator = { ...collect(), example:await ev(`(document.querySelector('#btn-example').click(), Object.fromEntries(['wl','vs','vc','P','I','C','tFull','rpm','ps'].map(k=>[k,document.querySelector('#card-'+k+' [data-v]').textContent])))`), width360:null };
 await shot('calc-top');
 await open('designer.html');
@@ -102,7 +102,7 @@ await ev(`document.querySelector('[data-step="wing:req"]').click()`);
 results.guide.after = collect();
 await scrollTo('#ex-trainer'); await shot('guide-trainer');
 await size(360, 800);
-for (const f of ['rc-plane-calculator.html', 'designer.html', 'build.html', 'guide.html']) {
+for (const f of ['index.html', 'designer.html', 'build.html', 'guide.html']) {
   await open(f, f === 'build.html' ? buildHash : '');
   results[f + '@360'] = await ev(`[document.documentElement.scrollWidth, [...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>362&&!e.closest('.table-scroll,.nav,.subnav,.ribbon,.sheet-preview,.mini-table,#rc-sprite')}).slice(0,6).map(e=>e.tagName+'#'+e.id+'.'+e.className)]`);
   await shot(f.replace('.html', '') + '-360');

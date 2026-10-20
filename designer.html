@@ -13,11 +13,11 @@
 <a class="skip" href="#d-req">Skip to designer</a>
 <header class="topbar">
   <div class="wrap">
-    <a class="brand" href="rc-plane-calculator.html" aria-label="RC Calc home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span>RC Calc<small>Aircraft Designer</small></span></a>
+    <a class="brand" href="index.html" aria-label="RC Calc home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span>RC Calc<small>Aircraft Designer</small></span></a>
     <nav class="nav" aria-label="Pages">
-      <a href="rc-plane-calculator.html#calculator">Calculator</a>
-      <a href="rc-plane-calculator.html#diagram">Diagram</a>
-      <a href="rc-plane-calculator.html#learn">Learn</a>
+      <a href="index.html#calculator">Calculator</a>
+      <a href="index.html#diagram">Diagram</a>
+      <a href="index.html#learn">Learn</a>
       <a href="guide.html">Guide</a>
       <a href="designer.html" class="active" aria-current="page">Designer</a>
       <a href="build.html" id="nav-build">Build</a>
@@ -88,7 +88,7 @@
           <details class="how"><summary>How the weight is estimated</summary><pre class="formula" id="bd-how"></pre></details>
         </div>
         <ul class="warnings" id="size-warn" style="margin-top:14px" aria-live="polite"></ul>
-        <div class="actions"><a class="btn" id="to-calc" href="rc-plane-calculator.html"><span class="ico"><svg aria-hidden="true"><use href="#i-link"/></svg></span>Open in calculator</a><a class="btn" id="to-build" href="build.html"><span class="ico"><svg aria-hidden="true"><use href="#i-scissors"/></svg></span>Open Build templates</a><a class="btn primary" id="to-sim" href="simulator.html"><span class="ico"><svg aria-hidden="true"><use href="#i-play"/></svg></span>Fly it in the simulator</a></div>
+        <div class="actions"><a class="btn" id="to-calc" href="index.html"><span class="ico"><svg aria-hidden="true"><use href="#i-link"/></svg></span>Open in calculator</a><a class="btn" id="to-build" href="build.html"><span class="ico"><svg aria-hidden="true"><use href="#i-scissors"/></svg></span>Open Build templates</a><a class="btn primary" id="to-sim" href="simulator.html"><span class="ico"><svg aria-hidden="true"><use href="#i-play"/></svg></span>Fly it in the simulator</a></div>
       </div>
     </div>
   </div>
@@ -143,14 +143,14 @@
           <div class="field"><label for="g-mount">Wing mount</label><select id="g-mount" data-path="geom.wingMount"><option value="high">High</option><option value="mid">Mid</option><option value="low">Low</option></select></div>
           <div class="field"><label for="g-preset">Body style</label><select id="g-preset" data-path="geom.preset"></select></div>
         </div>
-        <fieldset class="group" style="margin-top:6px"><legend>Control surfaces <a class="help" href="rc-plane-calculator.html#learn-receiver" aria-label="Learn about control surfaces">?</a></legend>
+        <fieldset class="group" style="margin-top:6px"><legend>Control surfaces <a class="help" href="index.html#learn-receiver" aria-label="Learn about control surfaces">?</a></legend>
           <p class="hint" style="margin-top:0">Chord % is the share of the local chord that moves; span % is measured from the wing root (0) to the tip (100). These drive the drawings, templates, 3D model and simulator.</p>
           <div class="diag-fields"><div class="field"><label for="s-ailcf">Aileron chord (%)</label><input id="s-ailcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.ailCf" data-scale="100"></div><div class="field"><label for="s-ail0">Aileron from span (%)</label><input id="s-ail0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.ailStart" data-scale="100"></div><div class="field"><label for="s-ail1">Aileron to span (%)</label><input id="s-ail1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.ailEnd" data-scale="100"></div><div class="field"><label for="s-elecf">Elevator chord (%)</label><input id="s-elecf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.eleCf" data-scale="100"></div><div class="field"><label for="s-rudcf">Rudder chord (%)</label><input id="s-rudcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.rudCf" data-scale="100"></div><div class="field"><label for="s-evcf">Elevon chord (tailless) (%)</label><input id="s-evcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.elevonCf" data-scale="100"></div><div class="field"><label for="s-ev0">Elevon from span (%)</label><input id="s-ev0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.elevonStart" data-scale="100"></div><div class="field"><label for="s-ev1">Elevon to span (%)</label><input id="s-ev1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.elevonEnd" data-scale="100"></div></div>
           <label class="check"><input type="checkbox" id="s-flaps" data-path="geom.surfaces.flaps"> Flaps (inboard, adds 2 servos)</label>
           <div class="diag-fields"><div class="field"><label for="s-flcf">Flap chord (%)</label><input id="s-flcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.flapCf" data-scale="100"></div><div class="field"><label for="s-fl0">Flap from span (%)</label><input id="s-fl0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.flapStart" data-scale="100"></div><div class="field"><label for="s-fl1">Flap to span (%)</label><input id="s-fl1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.flapEnd" data-scale="100"></div></div>
           <div class="diag-fields"><div class="field"><label for="s-tha">Aileron throw (°)</label><input id="s-tha" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwAil" data-optional placeholder="auto"></div><div class="field"><label for="s-the">Elevator throw (°)</label><input id="s-the" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwEle" data-optional placeholder="auto"></div><div class="field"><label for="s-thr">Rudder throw (°)</label><input id="s-thr" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwRud" data-optional placeholder="auto"></div><div class="field"><label for="s-thf">Flap throw (°)</label><input id="s-thf" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwFlap" data-optional placeholder="auto"></div></div>
         </fieldset>
-        <fieldset class="group" style="margin-top:6px" id="mount-box"><legend>Motor mount (thrust line) <a class="help" href="rc-plane-calculator.html#learn-thrustline" aria-label="Learn about thrust angles">?</a></legend>
+        <fieldset class="group" style="margin-top:6px" id="mount-box"><legend>Motor mount (thrust line) <a class="help" href="index.html#learn-thrustline" aria-label="Learn about thrust angles">?</a></legend>
           <p class="hint" style="margin-top:0">Tilting the motor stops the plane pitching or swinging when you change power. Down-thrust points the thrust slightly below the fuselage line; right-thrust points it towards the right wing. Look at the prop from behind the plane to see which way it spins.</p>
           <div class="diag-fields">
             <div class="field"><label for="m-down">Down-thrust (°)</label><input id="m-down" type="number" step="0.5" min="-8" max="8" data-path="geom.thrustDown"><p class="hint">Negative = up-thrust</p></div>

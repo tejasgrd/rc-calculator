@@ -406,7 +406,7 @@ function updateLinks(){
   const dh = '#design=' + RC.b64urlEncode(JSON.stringify(design));
   ['#to-build', '#nav-build', '#flow-build'].forEach(s => { const a = $(s); if (a) a.href = 'build.html' + dh; });
   ['#to-sim', '#nav-sim', '#flow-sim'].forEach(s => { const a = $(s); if (a) a.href = 'simulator.html' + dh; });
-  $('#to-calc').href = 'rc-plane-calculator.html#cfg=' + RC.b64urlEncode(JSON.stringify(calcState()));
+  $('#to-calc').href = 'index.html#cfg=' + RC.b64urlEncode(JSON.stringify(calcState()));
 }
 let saveTimer = null;
 function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => RC.store.set(RC.KEYS.design, design), 250); }

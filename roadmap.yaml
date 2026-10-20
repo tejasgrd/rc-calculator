@@ -62,7 +62,7 @@ done:
       spiral slipstream on the fin and P-factor (switchable in the simulator); suggested mount angles from the same physics
       (static moment balance refined by hands-off full-power runs) in the Designer, calculator, Build page and simulator;
       Build page washer/spacer table and printable mount wedges; "Power response" test flight.
-    files: ["assets/rc-sim-physics.js (forces, power test)", "assets/rc-sim-model.js (suggestThrustAngles, describeThrust)", "assets/designer.js", "rc-plane-calculator.html", "assets/build.js", "assets/rc-templates.js (mountShims, wedges)", "assets/rc-3d.js / rc-diagram.js (tilted motor, thrust arrows)", "assets/simulator.js"]
+    files: ["assets/rc-sim-physics.js (forces, power test)", "assets/rc-sim-model.js (suggestThrustAngles, describeThrust)", "assets/designer.js", "index.html", "assets/build.js", "assets/rc-templates.js (mountShims, wedges)", "assets/rc-3d.js / rc-diagram.js (tilted motor, thrust arrows)", "assets/simulator.js"]
     verified: suggested angles cut the full-power swing by ≥ 40 % on the built-ins; trainer swings 28° left with a straight mount, 3° with the suggested one
   - id: info-tooltips
     summary: Hover/focus "i" buttons with detailed explanations for about 230 parameters on every page (shared glossary).

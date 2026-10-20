@@ -1,0 +1,71 @@
+# RC Calc roadmap: machine- and human-readable plan for upcoming work.
+# Status values: done | next | planned | idea.  Effort: S (< 1 session), M (1–2), L (3+).
+
+project:
+  name: RC Calc (calculator, designer, build templates, flight simulator)
+  runs: offline from disk (file://), classic scripts, no build step
+  vendor: assets/vendor/three.bundle.min.js (three@0.186.1 + GLTF/OBJ/STL loaders, GLTFExporter, MIT)
+  tests:
+    unit: node tests/run-tests.mjs
+    pages: node tests/browser-smoke.mjs /tmp/rc-smoke
+    simulator: node tests/sim-smoke.mjs /tmp/rc-sim-smoke
+
+done:
+  - id: weather-v1
+    summary: Weather presets (calm, breeze, windy, gusty, stormy, thermal day) + advanced wind, gusts, turbulence, thermals, sky.
+    files: ["assets/rc-sim-physics.js (Environment, WEATHER_PRESETS)", "assets/simulator.js", "simulator.html", "assets/rc-sim-world.js (setWeather)"]
+  - id: air-density
+    summary: Density from temperature, field elevation and QNH; used by aero, thrust tables, trim and test predictions.
+    files: ["assets/rc-sim-physics.js (airDensity, densityAltitude)", "assets/rc-sim-model.js (thrTableAt, opts.rho)"]
+  - id: surfaces-from-design
+    summary: Control-surface chord %, span ranges, flaps and throws are design data (geom.surfaces) used by diagram, 3D, templates and simulator.
+    files: ["assets/rc-core.js (SURFACE_DEFAULTS, surfaceSpec)", "assets/rc-diagram.js", "assets/rc-3d.js", "assets/rc-templates.js", "assets/rc-sim-model.js", "designer.html"]
+  - id: as-built
+    summary: Measured weight and balance point (design.measured) applied via asBuilt() to Designer analyses and the simulator; simulator CG override.
+    files: ["assets/rc-aero.js (asBuilt, cgToRootLE)", "assets/designer.js", "assets/simulator.js"]
+  - id: flight-log-calibration
+    summary: >
+      Import EdgeTX/OpenTX CSV, INAV/Betaflight blackbox CSV, ArduPilot text logs, GPX/IGC or manual measurements; auto-detect
+      glide/climb/cruise/top-speed/stall/roll segments (wind from turns, energy-corrected climb, battery SoC from voltage); fit
+      cd0/clmax/thrust/current/roll factors with bounds and honest confidence; before/after charts; play the log in 3D.
+    files: ["assets/rc-sim-calib.js (SimCalib)", "assets/simulator.js (Calibrate tab)", "assets/designer.js (Flight logs card)", "tests/fixtures/"]
+    verified: synthetic logs recover all five factors within ±5 % (airspeed) and cd0 within 10 % (GPS only)
+    open_questions:
+      - Which logger/radio will be used first (EdgeTX with GPS + current sensor is the easiest)?
+      - ArduPilot binary .bin parser (text/CSV export works today).
+  - id: instructor-and-lessons
+    summary: >
+      Buddy-box instructor (student switch on SPACE / Xbox LB / a mapped transmitter switch, auto take-over at limits, shared
+      control), 20 lessons in 5 groups incl. crosswind, dead-stick, figure-eight, orientation drill, hand-launch, thermal,
+      loop/roll/stall turn/inverted and failure drills (motor cut, stuck aileron, radio failsafe, low battery); scoring with
+      stars and history (rcSim.progress.v1), coaching tips, "Show me" demo pilot, ideal-path ribbon and stick-hint dots.
+    files: ["assets/rc-sim-lessons.js (SimLessons: DEFS, Lesson, DemoPilot, Instructor)", "assets/simulator.js", "assets/rc-sim-input.js (student switch)"]
+    verified: every lesson completed by the demo pilot; auto take-over recovers from 90° bank / 45° dive at 22 m (unit tests)
+  - id: tree-turbulence
+    summary: Wind deficit + small-scale turbulence in the wake of each tree (up to 12 tree heights downwind, below 1.8 × height).
+    files: ["assets/rc-sim-physics.js (Environment.wakeAt, obstacles)", "assets/rc-sim-world.js (obstacles)"]
+  - id: import-improvements
+    summary: OBJ + .mtl colours/textures, multi-file glTF (.bin/textures selected together), licence/author/source from glTF asset extras or licence.txt, kept in .rcsim packages and shown as credits.
+    files: ["assets/rc-sim-import.js (parseMTL, metaFrom, readFiles, credit)", "assets/simulator.js (import wizard)"]
+  - id: scenario-share
+    summary: "Share link simulator.html#scenario=… with plane (full design), weather, air, start, assist, instructor, CG, throws and lesson; nothing uploaded."
+    files: ["assets/simulator.js (makeScenario, applyScenario)"]
+  - id: perf-settings
+    summary: Graphics presets (low → ultra) with shadow quality, draw distance and resolution scale; low-FPS hint.
+    files: ["assets/rc-sim-world.js (setGraphics)", "assets/simulator.js"]
+  - id: designer-density
+    summary: Field temperature and elevation in Designer step 6; density feeds sizing, performance, operating point and motor matching.
+    files: ["assets/rc-core.js (airDensity, densityAltitude)", "assets/designer.js", "designer.html"]
+
+next: []
+
+backlog:
+  - { id: airfoil-polars, status: idea, effort: M, summary: "Import XFLR5/XFOIL polars (cl, cd vs alpha at several Re) instead of typical values" }
+  - { id: vlm-wing, status: idea, effort: L, summary: "Vortex-lattice wing model for swept / flying-wing / low-AR designs" }
+  - { id: wing-flex, status: idea, effort: M, summary: "Simple wing bending/twist model for foam builds, optional break-up" }
+  - { id: ridge-lift, status: idea, effort: M, summary: "Hill + slope lift for slope soaring (then a slope-soaring lesson)" }
+  - { id: fpv-osd, status: idea, effort: M, summary: "FPV on-screen display, camera tilt, video noise, range limit" }
+  - { id: vr-headtracking, status: idea, effort: L, summary: "WebXR / head tracking for FPV" }
+  - { id: more-fields, status: idea, effort: M, summary: "Park, slope, beach, indoor gym fields; scenery LOD" }
+  - { id: ardupilot-bin, status: idea, effort: M, summary: "Binary ArduPilot dataflash (.bin) parser for calibration" }
+  - { id: lesson-replays, status: idea, effort: S, summary: "Save your best lesson attempt and fly against it as a ghost" }

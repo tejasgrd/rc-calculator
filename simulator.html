@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Flight Simulator · RC Calc</title>
+<link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('rcCalc.theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="assets/rc-style.css">
+</head>
+<body class="viz-root sim-page">
+<a class="skip" href="#sim-panel">Skip to simulator controls</a>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="rc-plane-calculator.html" aria-label="RC Calc home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span>RC Calc<small>Flight simulator</small></span></a>
+    <nav class="nav" aria-label="Pages">
+      <a href="rc-plane-calculator.html#calculator">Calculator</a>
+      <a href="rc-plane-calculator.html#learn">Learn</a>
+      <a href="designer.html" id="nav-designer">Designer</a>
+      <a href="build.html" id="nav-build">Build</a>
+      <a href="simulator.html" class="active" aria-current="page">Simulator</a>
+    </nav>
+    <div class="tools">
+      <button type="button" class="btn icon-only" id="theme-toggle" aria-pressed="false" aria-label="Use dark theme"><span class="ico"><svg aria-hidden="true"><use href="#i-moon"/></svg></span></button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="sim-shell">
+  <section class="sim-view" aria-label="Flight view">
+    <canvas id="sim-canvas" tabindex="0" aria-label="3D flight view. Fly with a controller, transmitter or the keyboard: arrows for aileron and elevator, A and D for rudder, W and S for throttle, R to reset."></canvas>
+    <div class="hud hud-tl" id="hud-tele" aria-live="off"></div>
+    <div class="hud hud-tc" id="hud-msg" role="status" aria-live="assertive"></div>
+    <div class="hud hud-tr">
+      <button type="button" class="hud-btn" id="hud-cam" title="Camera (C)">Pilot view</button>
+      <button type="button" class="hud-btn" id="hud-pause" title="Pause (P)" aria-pressed="false">Pause</button>
+      <button type="button" class="hud-btn" id="hud-reset" title="Reset (R)">Reset</button>
+      <button type="button" class="hud-btn" id="hud-panel" title="Show or hide the panel" aria-expanded="true" aria-controls="sim-panel">Panel</button>
+    </div>
+    <div class="hud hud-bl" id="hud-sticks" aria-hidden="true"></div>
+    <div class="hud hud-br" id="hud-chips"></div>
+    <div class="hud hud-lesson" id="hud-lesson" hidden></div>
+    <div class="vstick vstick-l" id="vs-left" hidden aria-hidden="true"><span></span></div>
+    <div class="vstick vstick-r" id="vs-right" hidden aria-hidden="true"><span></span></div>
+    <div class="sim-fallback" id="sim-fallback" hidden></div>
+  </section>
+
+  <aside class="sim-panel" id="sim-panel" aria-label="Simulator controls">
+    <div class="sim-tabs" role="tablist" aria-label="Simulator sections">
+      <button role="tab" id="tab-fly" aria-controls="pn-fly" aria-selected="true">Fly</button>
+      <button role="tab" id="tab-lessons" aria-controls="pn-lessons" aria-selected="false" tabindex="-1">Lessons</button>
+      <button role="tab" id="tab-tests" aria-controls="pn-tests" aria-selected="false" tabindex="-1">Test flight</button>
+      <button role="tab" id="tab-model" aria-controls="pn-model" aria-selected="false" tabindex="-1">Model</button>
+      <button role="tab" id="tab-controls" aria-controls="pn-controls" aria-selected="false" tabindex="-1">Controls</button>
+      <button role="tab" id="tab-world" aria-controls="pn-world" aria-selected="false" tabindex="-1">World</button>
+      <button role="tab" id="tab-replay" aria-controls="pn-replay" aria-selected="false" tabindex="-1">Replay</button>
+      <button role="tab" id="tab-calib" aria-controls="pn-calib" aria-selected="false" tabindex="-1">Calibrate</button>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-fly" aria-labelledby="tab-fly">
+      <div class="field"><label for="f-model">Aircraft</label><select id="f-model"></select></div>
+      <div class="row2">
+        <div class="field"><label for="f-start">Start</label><select id="f-start"><option value="runway">On the runway</option><option value="hand">Hand launch</option><option value="air">In the air</option></select></div>
+        <div class="field"><label for="f-cam">Camera</label><select id="f-cam"><option value="pilot">Pilot on the ground</option><option value="chase">Chase</option><option value="cockpit">Cockpit (FPV)</option><option value="tower">Tower</option></select></div>
+        <div class="field"><label for="f-assist">Assist</label><select id="f-assist"><option value="angle">Beginner (sticks set bank angle)</option><option value="level">Auto-level when sticks centred</option><option value="off">Off (real behaviour)</option></select></div>
+        <div class="field"><label for="f-speed">Time</label><select id="f-speed"><option value="1">Real time</option><option value="0.5">Slow motion ½×</option><option value="0.25">Slow motion ¼×</option></select></div>
+      </div>
+      <div class="field"><label for="f-instr">Instructor (buddy box)</label><select id="f-instr"><option value="off">Off</option><option value="switch">Student switch: I fly only while holding SPACE / LB</option><option value="auto">Auto take-over at limits (bank 60°, low, slow)</option><option value="shared">Shared: help grows near the limits</option></select></div>
+      <label class="check"><input type="checkbox" id="f-hints"> Stick hints (hollow dots show what the instructor would do)</label>
+      <label class="check"><input type="checkbox" id="f-ghost" checked> Show the ideal path in lessons</label>
+      <label class="check"><input type="checkbox" id="f-stallguard"> Stall protection (limits up-elevator near the stall)</label>
+      <label class="check"><input type="checkbox" id="f-zoom" checked> Auto-zoom in pilot view</label>
+      <label class="check"><input type="checkbox" id="f-trail"> Smoke trail</label>
+      <label class="check"><input type="checkbox" id="f-sound"> Sound (motor and wind)</label>
+      <div class="actions"><button type="button" class="btn primary" id="b-reset"><span class="ico"><svg aria-hidden="true"><use href="#i-reset"/></svg></span>Reset / launch (R)</button><button type="button" class="btn" id="b-rescue" title="Hold B (keyboard) or the B button">Rescue (hold B)</button></div>
+      <details class="assume" id="share-box"><summary>Share this scenario</summary>
+        <p class="hint">One link with the plane (its full design), weather, air, start, assist, instructor and the current lesson. Nothing is uploaded: the scenario is inside the link itself. Imported 3D looks are not included (share the .rcsim file for that).</p>
+        <label class="check"><input type="checkbox" id="sh-lesson" checked> Include the current lesson</label>
+        <div class="field"><label for="sh-url">Link</label><input id="sh-url" type="text" readonly></div>
+        <div class="actions" style="margin-top:0"><button type="button" class="btn sm primary" id="sh-copy">Copy link</button></div>
+      </details>
+      <details class="assume"><summary>Keyboard &amp; controller keys</summary>
+        <table class="data"><tbody>
+          <tr><th scope="row">Aileron / elevator</th><td>Arrow keys (Up = nose down, Down = nose up)</td></tr>
+          <tr><th scope="row">Rudder</th><td>A / D</td></tr><tr><th scope="row">Throttle</th><td>W / S</td></tr>
+          <tr><th scope="row">Reset · camera · pause</th><td>R · C · P</td></tr><tr><th scope="row">Assist · flaps · slow-mo · trail</th><td>H · F · T · G</td></tr>
+          <tr><th scope="row">Rescue (level and climb)</th><td>hold B</td></tr><tr><th scope="row">Student switch (buddy box)</th><td>hold SPACE (Xbox: LB)</td></tr>
+          <tr><th scope="row">Xbox controller</th><td>Mode 2: left stick rudder (and throttle in stick modes), right stick aileron/elevator, RT throttle. A reset, B rescue, X camera, Y assist, LB student switch, D-pad up flaps, RB slow-mo, LT throttle cut, Menu pause, View launch.</td></tr>
+        </tbody></table></details>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-lessons" aria-labelledby="tab-lessons" hidden>
+      <p class="hint">Short lessons with a goal. Each one sets up the plane, assist and wind for you. The yellow ring shows the next gate.</p>
+      <div id="lesson-list" class="lesson-list"></div>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-tests" aria-labelledby="tab-tests" hidden>
+      <p class="hint">Automatic test flights fly your design with an autopilot in still air, then compare the results with the Designer's predictions. A large mismatch means a model assumption needs checking.</p>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="t-all">Run all tests</button></div>
+      <div class="table-scroll"><table class="data" id="t-table"></table></div>
+      <h3 class="sub-h">Measure while you fly</h3>
+      <p class="hint">Start, fly the manoeuvre (steady climb, glide with motor off, full-aileron roll…), then stop.</p>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn" id="m-toggle" aria-pressed="false">Start measuring</button></div>
+      <div id="m-out" class="readout"></div>
+      <h3 class="sub-h">Stall events</h3>
+      <ul class="warnings" id="stall-log"></ul>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-model" aria-labelledby="tab-model" hidden>
+      <div class="stats" id="mdl-stats"></div>
+      <ul class="warnings" id="mdl-warn"></ul>
+      <div class="row2">
+        <div class="field"><label for="m-gear">Landing gear</label><select id="m-gear"><option value="auto">Auto (by configuration)</option><option value="tricycle">Tricycle</option><option value="taildragger">Taildragger</option><option value="none">None (hand launch)</option></select></div>
+        <div class="field"><label for="m-wing">Wing colour</label><input id="m-wing" type="color" value="#22a6c9"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="m-usecal" checked> Use flight-data calibration</label><p class="hint" id="m-usecal-hint" style="margin-top:-4px"></p>
+      <div class="field"><label for="m-cg">CG for this flight: <output id="m-cg-o"></output></label><input id="m-cg" type="range" min="0" max="60" step="0.5"><p class="hint" id="m-cg-hint"></p></div>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn sm" id="m-cg-reset">Use design / measured CG</button></div>
+      <div class="field"><label for="m-ail">Aileron throw: <output id="m-ail-o"></output></label><input id="m-ail" type="range" min="0" max="40" step="1"></div>
+      <div class="field"><label for="m-ele">Elevator throw: <output id="m-ele-o"></output></label><input id="m-ele" type="range" min="0" max="40" step="1"></div>
+      <div class="field"><label for="m-rud">Rudder throw: <output id="m-rud-o"></output></label><input id="m-rud" type="range" min="0" max="45" step="1"></div>
+      <div class="actions"><a class="btn" id="m-open-designer" href="designer.html"><span class="ico"><svg aria-hidden="true"><use href="#i-magic"/></svg></span>Edit in Designer</a><button type="button" class="btn" id="m-glb"><span class="ico"><svg aria-hidden="true"><use href="#i-cube"/></svg></span>Export GLB</button><p class="hint" id="m-attrib" hidden></p><button type="button" class="btn" id="m-pack"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Export .rcsim</button></div>
+      <details class="assume" id="imp-box"><summary>Import a 3D model (glTF/GLB, OBJ + MTL, STL)</summary>
+        <p class="hint">The 3D file only gives the look. The flight data comes from a design: pick one below, or start from a built-in and refine it in the Designer. Name the moving parts aileron_L / aileron_R / elevator / rudder / flap / prop in Blender and they'll be detected automatically. For a .gltf with separate .bin / texture files, or an .obj with its .mtl, select all the files together (include licence.txt if the download has one).</p>
+        <div class="field"><label for="imp-file">3D file or .rcsim package</label><input id="imp-file" type="file" multiple accept=".glb,.gltf,.bin,.obj,.mtl,.stl,.png,.jpg,.jpeg,.webp,.txt,.md,.rcsim,.json"></div>
+        <div id="imp-wizard" hidden>
+          <p class="readout" id="imp-stats"></p>
+          <div class="row2">
+            <div class="field"><label for="imp-fwd">Model nose points along</label><select id="imp-fwd"><option>-Z</option><option>+Z</option><option>+X</option><option>-X</option><option>+Y</option><option>-Y</option></select></div>
+            <div class="field"><label for="imp-up">Model top points along</label><select id="imp-up"><option>+Y</option><option>-Y</option><option>+Z</option><option>-Z</option><option>+X</option><option>-X</option></select></div>
+            <div class="field"><label for="imp-flight">Flight data from</label><select id="imp-flight"></select></div>
+            <div class="field"><label for="imp-name">Name</label><input id="imp-name" type="text" maxlength="60"></div>
+            <div class="field"><label for="imp-author">Author / creator</label><input id="imp-author" type="text" maxlength="120"></div>
+            <div class="field"><label for="imp-license">Licence</label><input id="imp-license" type="text" maxlength="120" list="imp-lic-list" placeholder="e.g. CC-BY-4.0"><datalist id="imp-lic-list"><option value="CC0-1.0"><option value="CC-BY-4.0"><option value="CC-BY-SA-4.0"><option value="CC-BY-NC-4.0"><option value="MIT"><option value="My own model"></datalist></div>
+            <div class="field"><label for="imp-source">Source link</label><input id="imp-source" type="url" maxlength="300" placeholder="https://"></div>
+          </div>
+          <p class="hint" id="imp-lic-hint"></p>
+          <div class="field"><label for="imp-dz">Fore / aft offset: <output id="imp-dz-o">0</output> mm</label><input id="imp-dz" type="range" min="-300" max="300" step="5" value="0"></div>
+          <div class="field"><label for="imp-dy">Up / down offset: <output id="imp-dy-o">0</output> mm</label><input id="imp-dy" type="range" min="-200" max="200" step="5" value="0"></div>
+          <h3 class="sub-h">Moving parts</h3><div class="table-scroll"><table class="data" id="imp-parts"></table></div>
+          <div class="actions"><button type="button" class="btn primary" id="imp-save">Save &amp; fly</button><button type="button" class="btn" id="imp-cancel">Cancel</button></div>
+        </div>
+      </details>
+      <div id="imp-list"></div>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-controls" aria-labelledby="tab-controls" hidden>
+      <div id="dev-list" aria-live="polite"></div>
+      <div id="wiz" class="panel wiz" hidden>
+        <h3 class="sub-h" style="margin-top:0">Transmitter setup</h3>
+        <p id="wiz-text"></p><div id="wiz-axes" class="wiz-axes" aria-hidden="true"></div>
+        <p class="hint" id="wiz-msg" role="status"></p>
+        <div class="actions"><button type="button" class="btn primary" id="wiz-next">Next</button><button type="button" class="btn" id="wiz-skip">Skip</button><button type="button" class="btn" id="wiz-cancel">Cancel</button></div>
+      </div>
+      <h3 class="sub-h">Gamepad (Xbox) options</h3>
+      <div class="row2">
+        <div class="field"><label for="c-mode">Stick mode</label><select id="c-mode"><option value="2">Mode 2 (throttle left)</option><option value="1">Mode 1 (throttle right)</option></select></div>
+        <div class="field"><label for="c-thr">Throttle on</label><select id="c-thr"><option value="trigger">Right trigger (RT)</option><option value="stick-hold">Stick, stays where you leave it</option><option value="stick-direct">Stick, direct (springs to half)</option></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="c-inv"> Invert elevator</label>
+      <h3 class="sub-h">Expo &amp; rates (all devices)</h3>
+      <div class="three" id="c-tune"></div>
+      <label class="check"><input type="checkbox" id="c-dual"> Low rates (60%)</label>
+      <label class="check"><input type="checkbox" id="c-touch"> On-screen sticks (touch / mouse)</label>
+      <details class="assume"><summary>Using a FlySky FS-i6 (or any RC transmitter)</summary>
+        <p class="hint">Plug a USB simulator adapter into the radio's trainer/sim port (for example a FlySky FS-SM100 or another dongle listed as FS-i6 compatible). Some setups need the trainer port set to PPM output. The computer sees it as a joystick: it appears above with a <b>Set up</b> button. The wizard learns your channel order, centre, end points and direction, and saves the profile for that adapter. A receiver plus an iBUS/PPM-to-USB adapter works the same way.</p>
+      </details>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-world" aria-labelledby="tab-world" hidden>
+      <div class="field"><label for="w-preset">Weather</label><select id="w-preset"><option value="calm">Calm morning</option><option value="breeze">Stable breeze</option><option value="windy">Windy</option><option value="gusty">Gusty</option><option value="stormy">Stormy</option><option value="thermal">Thermal day</option><option value="custom">Custom</option></select></div>
+      <p class="readout" id="w-summary" aria-live="polite"></p>
+      <h3 class="sub-h">Wind</h3>
+      <div class="field"><label for="w-speed">Mean wind: <output id="w-speed-o"></output></label><input id="w-speed" type="range" min="0" max="14" step="0.5" data-w></div><div class="field"><label for="w-dir">From: <output id="w-dir-o"></output></label><input id="w-dir" type="range" min="0" max="350" step="10" data-w></div><div class="field"><label for="w-dirvar">Direction wander: <output id="w-dirvar-o"></output></label><input id="w-dirvar" type="range" min="0" max="60" step="5" data-w></div><div class="field"><label for="w-shear">Wind gradient near the ground: <output id="w-shear-o"></output></label><input id="w-shear" type="range" min="0.05" max="0.35" step="0.01" data-w></div>
+      <h3 class="sub-h">Gusts &amp; turbulence</h3>
+      <div class="field"><label for="w-gpeak">Gust strength (above mean): <output id="w-gpeak-o"></output></label><input id="w-gpeak" type="range" min="0" max="10" step="0.5" data-w></div><div class="field"><label for="w-gint">Average time between gusts: <output id="w-gint-o"></output></label><input id="w-gint" type="range" min="3" max="40" step="1" data-w></div><div class="field"><label for="w-turb">Turbulence: <output id="w-turb-o"></output></label><input id="w-turb" type="range" min="0" max="1" step="0.05" data-w></div>
+      <h3 class="sub-h">Thermals</h3>
+      <label class="check"><input type="checkbox" id="w-thermals" data-w> Thermals</label>
+      <label class="check"><input type="checkbox" id="w-showth"> Show thermals (training aid)</label>
+      <div class="field"><label for="w-tstr">Thermal strength: <output id="w-tstr-o"></output></label><input id="w-tstr" type="range" min="0.5" max="4" step="0.1" data-w></div><div class="field"><label for="w-tsize">Thermal size: <output id="w-tsize-o"></output></label><input id="w-tsize" type="range" min="10" max="60" step="2" data-w></div><div class="field"><label for="w-tcount">Number of thermals: <output id="w-tcount-o"></output></label><input id="w-tcount" type="range" min="1" max="10" step="1" data-w></div><div class="field"><label for="w-sink">Sink around thermals: <output id="w-sink-o"></output></label><input id="w-sink" type="range" min="0" max="1" step="0.05" data-w></div>
+      <h3 class="sub-h">Air</h3>
+      <p class="hint">Thin air (hot, high or low pressure) means a higher stall speed, a longer take-off and less thrust. The aircraft is re-trimmed when you change these.</p>
+      <div class="field"><label for="w-temp">Temperature: <output id="w-temp-o"></output></label><input id="w-temp" type="range" min="-10" max="45" step="1" data-w></div><div class="field"><label for="w-elev">Field elevation: <output id="w-elev-o"></output></label><input id="w-elev" type="range" min="0" max="3500" step="50" data-w></div><div class="field"><label for="w-qnh">Sea-level pressure: <output id="w-qnh-o"></output></label><input id="w-qnh" type="range" min="960" max="1050" step="1" data-w></div>
+      <p class="readout" id="w-air"></p>
+      <h3 class="sub-h">Sky</h3>
+      <div class="field"><label for="w-clouds">Cloud cover: <output id="w-clouds-o"></output></label><input id="w-clouds" type="range" min="0" max="1" step="0.05" data-w></div><div class="field"><label for="w-vis">Visibility: <output id="w-vis-o"></output></label><input id="w-vis" type="range" min="600" max="5000" step="100" data-w></div>
+      <label class="check"><input type="checkbox" id="w-trees" checked> Trees are solid (crash on contact)</label>
+      <h3 class="sub-h">Photo flying field</h3>
+      <p class="hint">Load a 360° equirectangular photo (JPG/PNG), for example of your own field taken with a phone panorama. It is drawn behind the plane from the pilot's position.</p>
+      <div class="field"><label for="w-photo">360° photo</label><input id="w-photo" type="file" accept="image/*"></div>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn sm" id="w-photo-clear">Back to the 3D field</button></div>
+      <h3 class="sub-h">Custom scenery</h3>
+      <p class="hint">Load a glTF/GLB or OBJ scene (in metres; the ground stays flat at height 0).</p>
+      <div class="field"><label for="w-scene">Scenery file</label><input id="w-scene" type="file" multiple accept=".glb,.gltf,.bin,.obj,.mtl,.png,.jpg,.jpeg,.webp"></div>
+      <label class="check"><input type="checkbox" id="w-hidetrees"> Hide the built-in trees</label>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn sm" id="w-scene-clear">Remove scenery</button></div>
+      <h3 class="sub-h">Graphics</h3>
+      <div class="field"><label for="g-preset">Quality</label><select id="g-preset"><option value="low">Low (laptops, older phones)</option><option value="medium">Medium</option><option value="high">High</option><option value="ultra">Ultra</option><option value="custom">Custom</option></select></div>
+      <div class="row2">
+        <div class="field"><label for="g-shadows">Shadows</label><select id="g-shadows"><option value="off">Off</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+        <div class="field"><label for="g-res">Resolution: <output id="g-res-o"></output></label><input id="g-res" type="range" min="0.4" max="1" step="0.05"></div>
+      </div>
+      <div class="field"><label for="g-dist">Draw distance: <output id="g-dist-o"></output></label><input id="g-dist" type="range" min="600" max="5000" step="100"></div>
+      <p class="hint" id="g-fps" aria-live="polite"></p>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-replay" aria-labelledby="tab-replay" hidden>
+      <p class="hint">The last 15 minutes of flying are recorded at 30 Hz. Replay them from any camera, or export a CSV log.</p>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn primary" id="r-toggle" aria-pressed="false">Replay</button><button type="button" class="btn" id="r-play" aria-pressed="false" disabled>Play</button><button type="button" class="btn" id="r-csv">Export CSV</button></div>
+      <div class="field"><label for="r-pos">Time: <output id="r-pos-o">0.0 s</output></label><input id="r-pos" type="range" min="0" max="1" step="0.01" value="0" disabled></div>
+      <div class="field"><label for="r-speed">Replay speed</label><select id="r-speed"><option value="1">1×</option><option value="0.5">½×</option><option value="2">2×</option></select></div>
+      <p class="readout" id="r-info"></p>
+    </div>
+
+    <div class="sim-pane" role="tabpanel" id="pn-calib" aria-labelledby="tab-calib" hidden>
+      <p class="hint">Make the simulator match <b>your</b> plane. Import a flight log (or type a few measurements) and the model's drag, maximum lift, thrust, current and aileron power are fitted to what really happened. Logs stay on this computer.</p>
+      <div class="field"><label for="cal-file">Flight log</label><input id="cal-file" type="file" accept=".csv,.log,.txt,.gpx,.igc"></div>
+      <p class="hint">EdgeTX/OpenTX SD-card CSV, INAV/Betaflight blackbox (decoded CSV), ArduPilot text .log, GPX or IGC. Best: a log with throttle, airspeed or GPS, altitude and current. Fly straight legs at steady throttle, a full-throttle climb, a motor-off glide, a gentle stall and a full-aileron roll.</p>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn sm" id="cal-demo">Try with a demo log</button><button type="button" class="btn sm" id="cal-play" disabled>Play log in 3D</button></div>
+      <p class="readout" id="cal-summary" aria-live="polite"></p>
+      <details class="assume" id="cal-manual"><summary>No logger? Enter measurements</summary>
+        <div class="row2">
+          <div class="field"><label for="cm-stall">Stall speed <span data-cu></span></label><input id="cm-stall" type="number" step="any" min="0" data-cm="stall_ms" data-speed></div>
+          <div class="field"><label for="cm-top">Top speed (level) <span data-cu></span></label><input id="cm-top" type="number" step="any" min="0" data-cm="top_ms" data-speed></div>
+          <div class="field"><label for="cm-climb">Full-throttle climb (m/s)</label><input id="cm-climb" type="number" step="any" min="0" data-cm="climb_ms"></div>
+          <div class="field"><label for="cm-cv">Cruise speed <span data-cu></span></label><input id="cm-cv" type="number" step="any" min="0" data-cm="cruise.V" data-speed></div>
+          <div class="field"><label for="cm-ct">Cruise throttle (%)</label><input id="cm-ct" type="number" step="any" min="0" max="100" data-cm="cruise.thr" data-pct></div>
+          <div class="field"><label for="cm-ca">Cruise current (A)</label><input id="cm-ca" type="number" step="any" min="0" data-cm="cruise.A"></div>
+          <div class="field"><label for="cm-gv">Glide speed <span data-cu></span></label><input id="cm-gv" type="number" step="any" min="0" data-cm="glide.V" data-speed></div>
+          <div class="field"><label for="cm-gld">Glide ratio (: 1)</label><input id="cm-gld" type="number" step="any" min="0" data-cm="glide.LD"></div>
+          <div class="field"><label for="cm-fm">Flight time (min)</label><input id="cm-fm" type="number" step="any" min="0" data-cm="flight.min"></div>
+          <div class="field"><label for="cm-ft">at average throttle (%)</label><input id="cm-ft" type="number" step="any" min="0" max="100" data-cm="flight.thr" data-pct></div>
+        </div>
+        <button type="button" class="btn sm" id="cal-use-manual">Use these measurements</button>
+      </details>
+      <div id="cal-segs"></div>
+      <div class="actions"><button type="button" class="btn primary" id="cal-fit" disabled>Fit calibration</button></div>
+      <div id="cal-result"></div>
+      <div id="cal-charts"></div>
+    </div>
+  </aside>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/rc-common.js"></script>
+<script src="assets/rc-core.js"></script>
+<script src="assets/rc-aero.js"></script>
+<script src="assets/rc-templates.js"></script>
+<script src="assets/rc-3d.js"></script>
+<script src="assets/rc-sim-model.js"></script>
+<script src="assets/rc-sim-physics.js"></script>
+<script src="assets/rc-sim-input.js"></script>
+<script src="assets/rc-sim-calib.js"></script>
+<script src="assets/rc-sim-lessons.js"></script>
+<script src="assets/rc-charts.js"></script>
+<script src="assets/vendor/three.bundle.min.js"></script>
+<script src="assets/rc-sim-world.js"></script>
+<script src="assets/rc-sim-import.js"></script>
+<script src="assets/simulator.js"></script>
+</body>
+</html>

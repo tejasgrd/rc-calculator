@@ -1,0 +1,23 @@
+# Smoke-test output (screenshots + headless Chrome profile) when no outDir is given
+tests/out/
+.simprofile/
+.profile/
+
+# Node (in case dev tooling is added later)
+node_modules/
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local scratch and logs
+*.log
+!tests/fixtures/*.log
+.env
+.env.*

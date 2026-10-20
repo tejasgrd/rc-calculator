@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Aircraft Designer · RC Calc</title>
+<link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('rcCalc.theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="assets/rc-style.css">
+</head>
+<body class="viz-root">
+<a class="skip" href="#d-req">Skip to designer</a>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="rc-plane-calculator.html" aria-label="RC Calc home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span>RC Calc<small>Aircraft Designer</small></span></a>
+    <nav class="nav" aria-label="Pages">
+      <a href="rc-plane-calculator.html#calculator">Calculator</a>
+      <a href="rc-plane-calculator.html#diagram">Diagram</a>
+      <a href="rc-plane-calculator.html#learn">Learn</a>
+      <a href="designer.html" class="active" aria-current="page">Designer</a>
+      <a href="build.html" id="nav-build">Build</a>
+      <a href="simulator.html" id="nav-sim">Simulator</a>
+    </nav>
+    <div class="tools">
+      <div class="seg" role="radiogroup" aria-label="Unit system">
+        <input type="radio" name="unitSystem" id="us-metric" value="metric"><label for="us-metric">Metric</label>
+        <input type="radio" name="unitSystem" id="us-imperial" value="imperial"><label for="us-imperial">Imperial</label>
+      </div>
+      <button type="button" class="btn icon-only" id="theme-toggle" aria-pressed="false" aria-label="Use dark theme"><span class="ico"><svg aria-hidden="true"><use href="#i-moon"/></svg></span></button>
+    </div>
+  </div>
+</header>
+<nav class="subnav" aria-label="Designer steps">
+  <div class="wrap">
+    <a href="#d-req">1 Requirements</a><a href="#d-airfoil">2 Airfoil</a><a href="#d-geom">3 Geometry</a><a href="#d-stab">4 Stability</a>
+    <a href="#d-wing">5 Wing analysis</a><a href="#d-perf">6 Performance</a><a href="#d-power">7 Power system</a><a href="#d-3d">8 3D model</a><a href="#d-save">9 Save &amp; compare</a>
+  </div>
+</nav>
+
+<main id="main">
+<section class="page" style="padding-bottom:0">
+  <div class="wrap">
+    <div class="section-head hero">
+      <div>
+        <div class="eyebrow">Advanced: Aircraft Designer</div>
+        <h1>Design a plane from your requirements</h1>
+        <p class="lede">Tell it the mission, size and stall speed. The designer then works out the airframe and the weight breakdown, and checks stability and performance with real (simplified) aerodynamics. It also matches a motor and prop, shows the plane in 3D, and hands everything to the Build page for printable templates.</p>
+        <div class="flow" aria-label="Workflow"><span class="pill">Requirements</span><span class="arrow" aria-hidden="true">→</span><span class="pill">Size</span><span class="arrow" aria-hidden="true">→</span><span class="pill">Check stability &amp; performance</span><span class="arrow" aria-hidden="true">→</span><span class="pill">Pick power system</span><span class="arrow" aria-hidden="true">→</span><span class="pill">3D</span><span class="arrow" aria-hidden="true">→</span><a class="pill" href="build.html" id="flow-build">Build templates</a><span class="arrow" aria-hidden="true">→</span><a class="pill" href="simulator.html" id="flow-sim">Fly it</a></div>
+      </div>
+    </div>
+    <p class="disclaimer" style="margin-top:0"><span class="ico"><svg aria-hidden="true"><use href="#i-warn"/></svg></span><span><strong>Engineering estimates.</strong> The models are classical and simplified: weight build-up, Helmbold lift slope, tail-volume neutral point, Prandtl lifting line, a drag build-up, and a motor-constants model. They are useful for comparing options and catching mistakes. They do not replace XFLR5, eCalc, a watt meter, or a careful CG check before the first flight.</span></p>
+  </div>
+</section>
+
+<!-- 1 REQUIREMENTS -->
+<section class="dsec" id="d-req" aria-labelledby="h-req">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-req"><span class="step-num">1</span>Requirements &amp; sizing</h2></div>
+    <div class="two-col">
+      <form class="panel" id="req-form" novalidate onsubmit="return false" aria-label="Design requirements">
+        <div class="field"><label for="r-name">Design name</label><input id="r-name" type="text" data-path="name" maxlength="60"></div>
+        <div class="row2">
+          <div class="field"><label for="r-mission">Mission</label><select id="r-mission" data-path="req.mission"></select></div>
+          <div class="field"><label for="r-preset">Configuration</label><select id="r-preset" data-path="req.preset"></select></div>
+        </div>
+        <div class="field"><label for="r-material">Build material</label><select id="r-material" data-path="req.material"></select></div>
+        <div class="row2">
+          <div class="field"><label for="r-span">Target span <span class="u" data-u="length"></span></label><input id="r-span" type="number" step="any" min="0" data-path="req.span_m" data-dim="length" data-optional placeholder="auto"></div>
+          <div class="field"><label for="r-stall">Target stall speed <span class="u" data-u="speed"></span></label><input id="r-stall" type="number" step="any" min="0" data-path="req.stall_ms" data-dim="speed" data-optional placeholder="mission default"></div>
+          <div class="field"><label for="r-payload">Payload <span class="u" data-u="mass"></span></label><input id="r-payload" type="number" step="any" min="0" data-path="req.payload_kg" data-dim="mass"></div>
+          <div class="field"><label for="r-time">Flight time (min)</label><input id="r-time" type="number" step="any" min="1" data-path="req.flightMin"></div>
+          <div class="field"><label for="r-cells">Battery cells</label><select id="r-cells" data-path="req.cells"><option value="auto">Auto</option><option value="1">1S</option><option value="2">2S</option><option value="3">3S</option><option value="4">4S</option><option value="5">5S</option><option value="6">6S</option></select></div>
+          <div class="field"><label for="r-budget">Budget</label><div class="input-unit"><input id="r-budget" type="number" step="any" min="0" data-path="req.budget"><select id="r-currency" data-path="req.currency" aria-label="Currency"><option>$</option><option>€</option><option>£</option><option>₹</option><option>¥</option></select></div></div>
+        </div>
+        <label class="check"><input type="checkbox" id="r-250" data-path="req.keep250"> Keep under 250 g (reduces battery if needed)</label>
+        <p class="hint">With a span given, the wing area is the larger of span² ÷ mission aspect ratio and the area needed for the stall speed. Leave the span blank to size purely from the stall speed.</p>
+        <div class="actions"><button type="button" class="btn primary" id="btn-size"><span class="ico"><svg aria-hidden="true"><use href="#i-magic"/></svg></span>Size my plane</button><button type="button" class="btn" id="btn-reset-design"><span class="ico"><svg aria-hidden="true"><use href="#i-reset"/></svg></span>Start over</button></div>
+      </form>
+      <div>
+        <div class="stats" id="size-stats" aria-live="polite"></div>
+        <div class="card wide" style="margin-top:14px">
+          <h3>Weight breakdown <span class="tag tag-estimate">Estimate</span></h3>
+          <div class="breakdown" id="bd-bar" role="img" aria-label="Weight breakdown bar"></div>
+          <div class="legend" id="bd-legend"></div>
+          <div class="table-scroll"><table class="data" id="bd-table"></table></div>
+          <details class="how"><summary>How the weight is estimated</summary><pre class="formula" id="bd-how"></pre></details>
+        </div>
+        <ul class="warnings" id="size-warn" style="margin-top:14px" aria-live="polite"></ul>
+        <div class="actions"><a class="btn" id="to-calc" href="rc-plane-calculator.html"><span class="ico"><svg aria-hidden="true"><use href="#i-link"/></svg></span>Open in calculator</a><a class="btn" id="to-build" href="build.html"><span class="ico"><svg aria-hidden="true"><use href="#i-scissors"/></svg></span>Open Build templates</a><a class="btn primary" id="to-sim" href="simulator.html"><span class="ico"><svg aria-hidden="true"><use href="#i-play"/></svg></span>Fly it in the simulator</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 AIRFOIL -->
+<section class="dsec" id="d-airfoil" aria-labelledby="h-af">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-af"><span class="step-num">2</span>Airfoil</h2></div>
+    <div class="two-col">
+      <div class="panel">
+        <fieldset class="todo-form" style="gap:8px"><legend class="flabel">Choose an airfoil</legend><div class="styles" id="af-list" style="grid-template-columns:1fr"></div></fieldset>
+        <details class="assume" id="af-import">
+          <summary>Import a real airfoil (.dat)</summary>
+          <p class="hint">Download coordinates (Selig or Lednicer format) from the UIUC Airfoil Coordinates Database or Airfoil Tools, then load the file or paste the text here. Everything stays on your computer.</p>
+          <div class="field"><label for="af-file">.dat file</label><input id="af-file" type="file" accept=".dat,.txt,text/plain"></div>
+          <div class="field"><label for="af-text">or paste coordinates</label><textarea id="af-text" rows="5" style="width:100%;font:inherit;font-family:var(--mono);font-size:.8rem;border:1px solid var(--line);border-radius:9px;padding:8px;background:var(--card);color:var(--ink)"></textarea></div>
+          <button type="button" class="btn" id="af-use"><span class="ico"><svg aria-hidden="true"><use href="#i-upload"/></svg></span>Use pasted coordinates</button>
+        </details>
+      </div>
+      <div>
+        <div class="card wide" style="margin-top:0"><div id="af-view"></div></div>
+        <div class="stats" id="af-stats" style="margin-top:14px"></div>
+        <div id="af-note"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 GEOMETRY -->
+<section class="dsec" id="d-geom" aria-labelledby="h-geom">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-geom"><span class="step-num">3</span>Geometry &amp; weight</h2><p class="lede">Fine-tune the airframe the sizer produced. Every analysis below updates live.</p></div>
+    <div class="two-col">
+      <form class="panel" id="geom-form" novalidate onsubmit="return false" aria-label="Geometry">
+        <div class="field"><label for="g-auw">All-up weight for analysis <span class="u" data-u="mass"></span></label><input id="g-auw" type="number" step="any" min="0" data-path="auw" data-dim="mass"></div>
+        <div class="diag-fields">
+          <div class="field"><label for="g-span">Span <span class="u" data-u="length"></span></label><input id="g-span" type="number" step="any" min="0" data-path="geom.span" data-dim="length"></div>
+          <div class="field"><label for="g-cr">Root chord <span class="u" data-u="length"></span></label><input id="g-cr" type="number" step="any" min="0" data-path="geom.rootChord" data-dim="length"></div>
+          <div class="field"><label for="g-ct">Tip chord <span class="u" data-u="length"></span></label><input id="g-ct" type="number" step="any" min="0" data-path="geom.tipChord" data-dim="length"></div>
+          <div class="field"><label for="g-sweep">LE sweep (°)</label><input id="g-sweep" type="number" step="any" min="-10" max="45" data-path="geom.sweep"></div>
+          <div class="field"><label for="g-wash">Washout (°)</label><input id="g-wash" type="number" step="any" min="-3" max="8" data-path="geom.washout"></div>
+          <div class="field"><label for="g-dih">Dihedral (°)</label><input id="g-dih" type="number" step="any" min="-10" max="20" data-path="geom.dihedral"></div>
+          <div class="field"><label for="g-fl">Fuselage length <span class="u" data-u="length"></span></label><input id="g-fl" type="number" step="any" min="0" data-path="geom.fuseLen" data-dim="length"></div>
+          <div class="field"><label for="g-ta">Tail arm <span class="u" data-u="length"></span></label><input id="g-ta" type="number" step="any" min="0" data-path="geom.tailArm" data-dim="length"></div>
+          <div class="field"><label for="g-hs">H-tail span <span class="u" data-u="length"></span></label><input id="g-hs" type="number" step="any" min="0" data-path="geom.hSpan" data-dim="length"></div>
+          <div class="field"><label for="g-hc">H-tail chord <span class="u" data-u="length"></span></label><input id="g-hc" type="number" step="any" min="0" data-path="geom.hChord" data-dim="length"></div>
+          <div class="field"><label for="g-vh">Fin height <span class="u" data-u="length"></span></label><input id="g-vh" type="number" step="any" min="0" data-path="geom.vHeight" data-dim="length"></div>
+          <div class="field"><label for="g-vc">Fin chord <span class="u" data-u="length"></span></label><input id="g-vc" type="number" step="any" min="0" data-path="geom.vChord" data-dim="length"></div>
+          <div class="field"><label for="g-cg">CG (% MAC)</label><input id="g-cg" type="number" step="any" min="0" max="100" data-path="geom.cg"></div>
+          <div class="field"><label for="g-motor">Motor</label><select id="g-motor" data-path="geom.motorPos"><option value="tractor">Nose tractor</option><option value="pusher">Rear pusher</option></select></div>
+          <div class="field"><label for="g-mount">Wing mount</label><select id="g-mount" data-path="geom.wingMount"><option value="high">High</option><option value="mid">Mid</option><option value="low">Low</option></select></div>
+          <div class="field"><label for="g-preset">Body style</label><select id="g-preset" data-path="geom.preset"></select></div>
+        </div>
+        <fieldset class="group" style="margin-top:6px"><legend>Control surfaces <a class="help" href="rc-plane-calculator.html#learn-receiver" aria-label="Learn about control surfaces">?</a></legend>
+          <p class="hint" style="margin-top:0">Chord % is the share of the local chord that moves; span % is measured from the wing root (0) to the tip (100). These drive the drawings, templates, 3D model and simulator.</p>
+          <div class="diag-fields"><div class="field"><label for="s-ailcf">Aileron chord (%)</label><input id="s-ailcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.ailCf" data-scale="100"></div><div class="field"><label for="s-ail0">Aileron from span (%)</label><input id="s-ail0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.ailStart" data-scale="100"></div><div class="field"><label for="s-ail1">Aileron to span (%)</label><input id="s-ail1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.ailEnd" data-scale="100"></div><div class="field"><label for="s-elecf">Elevator chord (%)</label><input id="s-elecf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.eleCf" data-scale="100"></div><div class="field"><label for="s-rudcf">Rudder chord (%)</label><input id="s-rudcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.rudCf" data-scale="100"></div><div class="field"><label for="s-evcf">Elevon chord (tailless) (%)</label><input id="s-evcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.elevonCf" data-scale="100"></div><div class="field"><label for="s-ev0">Elevon from span (%)</label><input id="s-ev0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.elevonStart" data-scale="100"></div><div class="field"><label for="s-ev1">Elevon to span (%)</label><input id="s-ev1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.elevonEnd" data-scale="100"></div></div>
+          <label class="check"><input type="checkbox" id="s-flaps" data-path="geom.surfaces.flaps"> Flaps (inboard, adds 2 servos)</label>
+          <div class="diag-fields"><div class="field"><label for="s-flcf">Flap chord (%)</label><input id="s-flcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.flapCf" data-scale="100"></div><div class="field"><label for="s-fl0">Flap from span (%)</label><input id="s-fl0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.flapStart" data-scale="100"></div><div class="field"><label for="s-fl1">Flap to span (%)</label><input id="s-fl1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.flapEnd" data-scale="100"></div></div>
+          <div class="diag-fields"><div class="field"><label for="s-tha">Aileron throw (°)</label><input id="s-tha" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwAil" data-optional placeholder="auto"></div><div class="field"><label for="s-the">Elevator throw (°)</label><input id="s-the" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwEle" data-optional placeholder="auto"></div><div class="field"><label for="s-thr">Rudder throw (°)</label><input id="s-thr" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwRud" data-optional placeholder="auto"></div><div class="field"><label for="s-thf">Flap throw (°)</label><input id="s-thf" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwFlap" data-optional placeholder="auto"></div></div>
+        </fieldset>
+        <div class="actions"><button type="button" class="btn" id="g-auto"><span class="ico"><svg aria-hidden="true"><use href="#i-magic"/></svg></span>Auto-proportion tail &amp; fuselage</button></div>
+      </form>
+      <div>
+        <div class="card diagram-box"><div id="g-diagram"></div></div>
+        <p class="readout" id="g-readout"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 STABILITY -->
+<section class="dsec" id="d-stab" aria-labelledby="h-stab">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-stab"><span class="step-num">4</span>Stability &amp; CG</h2></div>
+    <div class="stats" id="st-stats" aria-live="polite"></div>
+    <div class="card wide"><h3>Where to balance <span class="tag tag-estimate">Estimate</span></h3><div id="st-bar"></div>
+      <div class="actions"><button type="button" class="btn" id="st-apply"><span class="ico"><svg aria-hidden="true"><use href="#i-target"/></svg></span>Set CG to recommended</button>
+        <div class="field" style="margin:0"><label for="st-sm" class="sr-only">Target static margin</label><select id="st-sm" data-path="smTarget" style="width:auto"><option value="0.05">Target static margin 5% (sporty)</option><option value="0.1">Target static margin 10% (recommended)</option><option value="0.15">Target static margin 15% (very docile)</option></select></div></div>
+      <details class="how"><summary>How it was calculated</summary><pre class="formula" id="st-how"></pre></details>
+    </div>
+    <ul class="warnings" id="st-warn" style="margin-top:14px"></ul>
+    <div class="card wide" id="asbuilt">
+      <h3>As built (measured) <span class="tag tag-physics">Physics</span></h3>
+      <p class="sub">Weigh the finished plane and find its balance point (support it under the wing at equal distances from the fuselage). Enter the measurements here: the stability analysis, performance, 3D model and simulator then use your real plane instead of the estimate.</p>
+      <form id="mb-form" novalidate onsubmit="return false" class="three" aria-label="As-built measurements">
+        <label class="check" style="align-self:center"><input type="checkbox" id="mb-use" data-path="measured.use"> Use my measurements</label>
+        <div class="field" style="margin:0"><label for="mb-auw">Measured weight <span class="u" data-u="mass"></span></label><input id="mb-auw" type="number" step="any" min="0" data-path="measured.auw_kg" data-dim="mass" data-optional placeholder="not measured"></div>
+        <div class="field" style="margin:0"><label for="mb-cg">Balance point behind wing root LE <span class="u" data-u="length"></span></label><input id="mb-cg" type="number" step="any" data-path="measured.cg_m" data-dim="length" data-optional placeholder="not measured"></div>
+      </form>
+      <div class="stats" id="mb-out" style="margin-top:12px"></div>
+    </div>
+    <div class="card wide">
+      <h3>Multi-panel wing CG calculator <span class="tag tag-physics">Physics</span></h3>
+      <p class="sub">For wings with several panels (for example a straight centre section with tapered or swept tips): integrates the planform for area, MAC and its position, then puts the CG at the target static margin. Neutral point is at the MAC quarter-chord (exact for a tailless wing; a tail moves it aft).</p>
+      <div class="field" style="max-width:260px"><label for="mp-root">Root chord <span class="u" data-u="length"></span></label><input id="mp-root" type="number" step="any" min="0"></div>
+      <div class="table-scroll"><table class="panels-table" id="mp-table"></table></div>
+      <div class="actions"><button type="button" class="btn sm" id="mp-add">Add panel</button><button type="button" class="btn sm" id="mp-from">Copy from current wing</button></div>
+      <div class="stats" id="mp-out" style="margin-top:12px"></div>
+      <div id="mp-svg" style="margin-top:10px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 WING ANALYSIS -->
+<section class="dsec" id="d-wing" aria-labelledby="h-wing">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-wing"><span class="step-num">5</span>Wing analysis (lifting line)</h2><p class="lede">Prandtl lifting-line theory solves the spanwise lift on your tapered, twisted wing. It shows how close the wing is to ideal (elliptic) loading and where the stall starts: tip stall causes a wing drop, root stall is gentle. Sweep is not modelled.</p></div>
+    <div class="stats" id="ll-stats"></div>
+    <div class="charts" style="margin-top:14px">
+      <div class="card chart-card"><h3>Spanwise lift distribution at cruise</h3><p class="sub">Normalised load cl·c / (CL·c<sub>mean</sub>) compared with the ideal elliptic shape.</p><div id="ch-load"></div></div>
+      <div class="card chart-card"><h3>Local cl ÷ cl<sub>max</sub> at the onset of stall</h3><p class="sub">The first point to touch 1.0 stalls first. Add washout or reduce taper if this is near the tip.</p><div id="ch-stall"></div></div>
+    </div>
+    <details class="how panel" style="margin-top:14px"><summary>How it was calculated</summary><pre class="formula" id="ll-how"></pre></details>
+  </div>
+</section>
+
+<!-- 6 PERFORMANCE -->
+<section class="dsec" id="d-perf" aria-labelledby="h-perf">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-perf"><span class="step-num">6</span>Flight performance</h2></div>
+    <form class="panel" id="perf-form" novalidate onsubmit="return false" aria-label="Performance assumptions" style="margin-bottom:14px">
+      <div class="three">
+        <div class="field" style="margin:0"><label for="p-etap">Prop efficiency (cruise)</label><input id="p-etap" type="number" step="any" min="0.2" max="0.9" data-path="perf.etaProp"></div>
+        <div class="field" style="margin:0"><label for="p-etam">Motor efficiency</label><input id="p-etam" type="number" step="any" min="0.3" max="0.95" data-path="perf.etaMotor"><p class="hint">Used if no motor is chosen in step 7.</p></div>
+        <label class="check" style="align-self:center"><input type="checkbox" id="p-gear" data-path="perf.gear"> Fixed landing gear (adds drag)</label>
+        <div class="field" style="margin:0"><label for="p-temp">Field temperature (°C)</label><input id="p-temp" type="number" step="any" min="-30" max="50" data-path="perf.tempC"></div>
+        <div class="field" style="margin:0"><label for="p-elev">Field elevation&nbsp;<span data-u="altitude"></span></label><input id="p-elev" type="number" step="any" min="-400" max="5000" data-dim="altitude" data-path="perf.elevation"></div>
+        <div class="field" style="margin:0" aria-live="polite"><p class="hint" style="margin:0;font-weight:600">Air at your field</p><p class="readout" id="p-air" style="margin:4px 0 0"></p></div>
+      </div>
+    </form>
+    <div class="stats" id="pf-stats"></div>
+    <div class="charts" style="margin-top:14px">
+      <div class="card chart-card"><h3>Thrust available vs drag</h3><p class="sub">Where the lines cross is the top speed; the gap is climb.</p><div id="ch-td"></div></div>
+      <div class="card chart-card"><h3>Electrical power required</h3><p class="sub">The bottom of the curve is the most efficient (longest-endurance) speed.</p><div id="ch-pr"></div></div>
+      <div class="card chart-card"><h3>Glide polar (motor off)</h3><p class="sub">Sink rate vs airspeed. The lowest point is best for thermals.</p><div id="ch-glide"></div></div>
+    </div>
+    <details class="how panel" style="margin-top:14px"><summary>How it was calculated</summary><pre class="formula" id="pf-how"></pre></details>
+    <div class="card wide" id="calib-card">
+      <h3>Flight logs &amp; calibration <span class="tag tag-physics">Physics</span></h3>
+      <div id="calib-body"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 POWER SYSTEM -->
+<section class="dsec" id="d-power" aria-labelledby="h-power">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-power"><span class="step-num">7</span>Power system matching</h2><p class="lede">An eCalc-style motor model (Kv, winding resistance Rm, no-load current Io, battery resistance) finds the real operating point of each motor and prop combination. It keeps the ones inside the motor's limits and ranks them by how well they fit your plane.</p></div>
+    <form class="panel" id="pw-form" novalidate onsubmit="return false" aria-label="Power system options" style="margin-bottom:14px">
+      <div class="three">
+        <div class="field" style="margin:0"><label for="pw-cells">Cells</label><select id="pw-cells" data-path="cells"><option value="1">1S</option><option value="2">2S</option><option value="3">3S</option><option value="4">4S</option><option value="5">5S</option><option value="6">6S</option></select></div>
+        <div class="field" style="margin:0"><label for="pw-cap">Battery capacity (mAh)</label><input id="pw-cap" type="number" step="any" min="50" data-path="capacity_mAh"></div>
+        <div class="field" style="margin:0"><label for="pw-maxd">Max prop diameter (in)</label><input id="pw-maxd" type="number" step="any" min="3" data-path="maxPropD"></div>
+      </div>
+    </form>
+    <div class="card wide" style="margin-top:0">
+      <h3>Best matches <span class="tag tag-estimate">Estimate</span></h3>
+      <p class="sub" id="pw-sub"></p>
+      <div class="table-scroll"><table class="data" id="pw-table"></table></div>
+    </div>
+    <div class="card wide" id="pw-chosen"></div>
+    <details class="card wide" id="pw-db"><summary style="cursor:pointer;font-weight:700">Motor database (typical class values + your own motors)</summary>
+      <p class="sub">Built-in entries are typical values for each motor size class, not specific products. For accurate results add your motor from its data sheet (Kv, Rm in Ω, Io in A, limits).</p>
+      <div class="table-scroll"><table class="data" id="db-table"></table></div>
+      <form id="db-form" class="three" novalidate onsubmit="return false" aria-label="Add custom motor" style="margin-top:12px">
+        <div class="field" style="margin:0"><label for="db-name">Name</label><input id="db-name" type="text" placeholder="My 2208 1100KV"></div>
+        <div class="field" style="margin:0"><label for="db-kv">KV</label><input id="db-kv" type="number" step="any" min="1"></div>
+        <div class="field" style="margin:0"><label for="db-rm">Rm (Ω)</label><input id="db-rm" type="number" step="any" min="0"></div>
+        <div class="field" style="margin:0"><label for="db-io">Io (A)</label><input id="db-io" type="number" step="any" min="0"></div>
+        <div class="field" style="margin:0"><label for="db-maxa">Max current (A)</label><input id="db-maxa" type="number" step="any" min="0"></div>
+        <div class="field" style="margin:0"><label for="db-maxw">Max power (W)</label><input id="db-maxw" type="number" step="any" min="0"></div>
+        <div class="field" style="margin:0"><label for="db-mass">Weight (g)</label><input id="db-mass" type="number" step="any" min="0"></div>
+        <div class="field" style="margin:0"><label for="db-cells">Cells (min–max)</label><input id="db-cells" type="text" placeholder="2-3"></div>
+        <div style="align-self:end"><button type="button" class="btn" id="db-add">Add motor</button></div>
+      </form>
+    </details>
+  </div>
+</section>
+
+<!-- 8 3D -->
+<section class="dsec" id="d-3d" aria-labelledby="h-3d">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-3d"><span class="step-num">8</span>3D model</h2><p class="lede">A live 3D model lofted from your airfoil and geometry. Drag to orbit, scroll or pinch to zoom; with the model focused, use the arrow keys and + / &minus;. STL export gives a shell for Fusion, Blender or slicers (a visual model, not a print-ready airframe).</p></div>
+    <div class="viewer"><canvas id="v3d" tabindex="0" role="img" aria-label="Interactive 3D model of the designed aircraft. Use arrow keys to rotate, plus and minus to zoom."></canvas><p class="hint">Drag to rotate · scroll to zoom</p></div>
+    <div class="toolbar" role="toolbar" aria-label="3D view controls">
+      <button type="button" class="btn" data-view="iso">Iso</button><button type="button" class="btn" data-view="front">Front</button><button type="button" class="btn" data-view="side">Side</button><button type="button" class="btn" data-view="top">Top</button>
+      <button type="button" class="btn" id="v-auto" aria-pressed="false"><span class="ico"><svg aria-hidden="true"><use href="#i-play"/></svg></span>Auto-rotate</button>
+      <button type="button" class="btn" id="v-wire" aria-pressed="false"><span class="ico"><svg aria-hidden="true"><use href="#i-layers"/></svg></span>Wireframe</button>
+      <button type="button" class="btn" id="v-png"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>PNG</button>
+      <button type="button" class="btn" id="v-stl"><span class="ico"><svg aria-hidden="true"><use href="#i-cube"/></svg></span>STL (mm)</button>
+    </div>
+    <p class="readout" id="v-readout"></p>
+  </div>
+</section>
+
+<!-- 9 SAVE & COMPARE -->
+<section class="dsec" id="d-save" aria-labelledby="h-save">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-save"><span class="step-num">9</span>Save &amp; compare designs</h2></div>
+    <div class="panel">
+      <div class="actions" style="margin-top:0">
+        <button type="button" class="btn primary" id="sv-save"><span class="ico"><svg aria-hidden="true"><use href="#i-save"/></svg></span>Save current design</button>
+        <button type="button" class="btn" id="sv-export"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Export JSON</button>
+        <label class="btn" for="sv-import" style="cursor:pointer"><span class="ico"><svg aria-hidden="true"><use href="#i-upload"/></svg></span>Import JSON</label><input id="sv-import" type="file" accept=".json,application/json" class="sr-only">
+        <button type="button" class="btn" id="sv-share"><span class="ico"><svg aria-hidden="true"><use href="#i-link"/></svg></span>Share link</button>
+      </div>
+      <div class="field" id="sv-share-field" hidden><label for="sv-url">Shareable link</label><input id="sv-url" type="text" readonly></div>
+      <p class="hint">Saved designs live in this browser (localStorage). Tick up to four to compare side by side.</p>
+      <div class="table-scroll"><table class="data cmp" id="sv-table"></table></div>
+      <div class="table-scroll" style="margin-top:14px"><table class="data cmp" id="cmp-table"></table></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap"><p>RC Calc Aircraft Designer: works offline from your disk and makes no network requests. Results are engineering estimates. Verify them with eCalc or XFLR5, a watt meter, and a careful CG check.</p></div></footer>
+
+<script src="assets/rc-common.js"></script>
+<script src="assets/rc-core.js"></script>
+<script src="assets/rc-diagram.js"></script>
+<script src="assets/rc-aero.js"></script>
+<script src="assets/rc-templates.js"></script>
+<script src="assets/rc-3d.js"></script>
+<script src="assets/rc-charts.js"></script>
+<script src="assets/designer.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Build templates &amp; parts · RC Calc</title>
+<link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('rcCalc.theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="assets/rc-style.css">
+<style id="page-size"></style>
+</head>
+<body class="viz-root">
+<a class="skip" href="#b-options">Skip to build options</a>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="rc-plane-calculator.html" aria-label="RC Calc home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span>RC Calc<small>Build templates</small></span></a>
+    <nav class="nav" aria-label="Pages">
+      <a href="rc-plane-calculator.html#calculator">Calculator</a>
+      <a href="rc-plane-calculator.html#diagram">Diagram</a>
+      <a href="rc-plane-calculator.html#learn">Learn</a>
+      <a href="designer.html" id="nav-designer">Designer</a>
+      <a href="build.html" class="active" aria-current="page">Build</a>
+      <a href="simulator.html" id="nav-sim">Simulator</a>
+    </nav>
+    <div class="tools">
+      <div class="seg" role="radiogroup" aria-label="Unit system">
+        <input type="radio" name="unitSystem" id="us-metric" value="metric"><label for="us-metric">Metric</label>
+        <input type="radio" name="unitSystem" id="us-imperial" value="imperial"><label for="us-imperial">Imperial</label>
+      </div>
+      <button type="button" class="btn icon-only" id="theme-toggle" aria-pressed="false" aria-label="Use dark theme"><span class="ico"><svg aria-hidden="true"><use href="#i-moon"/></svg></span></button>
+    </div>
+  </div>
+</header>
+<nav class="subnav" aria-label="Build sections"><div class="wrap"><a href="#b-options">1 Options</a><a href="#b-pages">2 Templates</a><a href="#b-cut">3 Cutting list</a><a href="#b-bom">4 Parts &amp; cost</a><a href="#b-steps">5 Build sequence</a></div></nav>
+
+<main id="main">
+<section class="page" style="padding-bottom:0">
+  <div class="wrap">
+    <div class="section-head hero"><div>
+      <div class="eyebrow">Build</div>
+      <h1>Templates, cutting list &amp; parts</h1>
+      <p class="lede">Full-size (1:1) templates for your design, tiled onto the paper you have. Print at 100%, check the scale square, trim to the dashed borders, and tape the pages together using the red alignment crosses.</p>
+      <p class="readout" id="b-source"></p>
+    </div></div>
+    <div id="b-nodesign"></div>
+  </div>
+</section>
+
+<section class="dsec" id="b-options" aria-labelledby="h-bo">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-bo"><span class="step-num">1</span>Build options</h2></div>
+    <form class="panel" id="bo-form" novalidate onsubmit="return false" aria-label="Build options">
+      <div class="three">
+        <div class="field" style="margin:0"><label for="bo-method">Build method</label><select id="bo-method" data-opt="method"><option value="foam">Foam / Depron</option><option value="balsa">Balsa (built-up)</option></select></div>
+        <div class="field" style="margin:0" id="bo-foam-field"><label for="bo-foam">Foam wing style</label><select id="bo-foam" data-opt="foamStyle"><option value="kfm">KFm-2 step (Depron sheet)</option><option value="folded">Folded foam board (Flite Test style)</option></select></div>
+        <div class="field" style="margin:0"><label for="bo-paper">Paper size</label><select id="bo-paper" data-opt="paper"><option value="a5">A5 (148 × 210 mm)</option><option value="letter">US Letter (8.5 × 11 in)</option><option value="a4">A4 (210 × 297 mm)</option></select></div>
+        <div class="field" style="margin:0"><label for="bo-unit">Dimension labels</label><select id="bo-unit" data-opt="unit"><option value="mm">Millimetres</option><option value="in">Inches</option></select></div>
+        <div class="field" style="margin:0"><label for="bo-surf">Control surfaces</label><select id="bo-surf" data-opt="surf"><option value="ailerons">Ailerons</option><option value="none">None (rudder / elevator only)</option><option value="elevons">Elevons</option></select></div>
+        <div class="field" style="margin:0"><label for="bo-sheet">Sheet thickness (mm)</label><input id="bo-sheet" type="number" step="any" min="0.5" max="20" data-opt="sheetT"></div>
+      </div>
+      <div class="three" id="bo-balsa" style="margin-top:10px">
+        <div class="field" style="margin:0"><label for="bo-rib">Rib spacing (mm)</label><input id="bo-rib" type="number" step="any" min="20" max="200" data-opt="ribSpacing"></div>
+        <div class="field" style="margin:0"><label for="bo-sparw">Spar width (mm)</label><input id="bo-sparw" type="number" step="any" min="1" max="20" data-opt="sparW"></div>
+        <div class="field" style="margin:0"><label for="bo-sparh">Spar depth (mm)</label><input id="bo-sparh" type="number" step="any" min="1" max="20" data-opt="sparH"></div>
+        <div class="field" style="margin:0"><label for="bo-le">LE stock (mm)</label><input id="bo-le" type="number" step="any" min="0" max="30" data-opt="le"></div>
+        <div class="field" style="margin:0"><label for="bo-te">TE stock (mm)</label><input id="bo-te" type="number" step="any" min="0" max="40" data-opt="te"></div>
+      </div>
+      <fieldset class="todo-form" style="margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));display:grid"><legend class="flabel">Include</legend>
+        <label class="check"><input type="checkbox" data-inc="wing"> Wing</label><label class="check"><input type="checkbox" data-inc="tail"> Tail surfaces</label><label class="check"><input type="checkbox" data-inc="fuse"> Fuselage &amp; formers</label>
+      </fieldset>
+    </form>
+  </div>
+</section>
+
+<section class="dsec" id="b-pages" aria-labelledby="h-bp">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-bp"><span class="step-num">2</span>Printable templates</h2></div>
+    <div class="callout"><span class="ico"><svg aria-hidden="true"><use href="#i-print"/></svg></span><span><b>Printing:</b> choose "Actual size" / 100% (turn off "Fit to page"), then measure the 50 mm scale square. Pages overlap by 10 mm: trim one page on its dashed border, lay it over the next, and line up the red crosses. Each page is labelled row-column.</span></div>
+    <p class="readout" id="b-stats" aria-live="polite"></p>
+    <div class="actions">
+      <button type="button" class="btn primary" id="b-print"><span class="ico"><svg aria-hidden="true"><use href="#i-print"/></svg></span>Print templates</button>
+      <button type="button" class="btn" id="b-svg"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Full-size SVG (plotter / laser)</button>
+    </div>
+    <h3 style="margin:18px 0 8px">Whole sheet</h3>
+    <div class="sheet-preview" id="b-sheet" role="img" aria-label="Preview of all template parts on one sheet"></div>
+    <h3 style="margin:18px 0 0">Pages <small class="hint">(select a page to download it on its own)</small></h3>
+    <div class="page-grid" id="page-grid"></div>
+  </div>
+</section>
+
+<section class="dsec" id="b-cut" aria-labelledby="h-bc">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-bc"><span class="step-num">3</span>Cutting list</h2></div>
+    <div class="card wide" style="margin-top:0"><div class="table-scroll"><table class="data" id="cut-table"></table></div></div>
+  </div>
+</section>
+
+<section class="dsec" id="b-bom" aria-labelledby="h-bb">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-bb"><span class="step-num">4</span>Parts &amp; cost</h2><p class="lede">Auto-generated from your design. Prices are rough examples. Type your local prices and weights and they are remembered in this browser.</p></div>
+    <div class="stats" id="bom-stats"></div>
+    <div class="card wide"><div class="table-scroll"><table class="data" id="bom-table"></table></div>
+      <div class="actions"><button type="button" class="btn sm" id="bom-csv"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Export CSV</button><button type="button" class="btn sm" id="bom-reset"><span class="ico"><svg aria-hidden="true"><use href="#i-reset"/></svg></span>Reset prices</button></div>
+      <p class="hint">Not included: transmitter, LiPo charger, tools. Electronics weights use the designer's estimates; compare the total with your scale once built.</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" id="b-steps" aria-labelledby="h-bs">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-bs"><span class="step-num">5</span>Build sequence</h2></div>
+    <div class="panel"><ol id="steps" style="margin:0;padding-left:1.3em;display:grid;gap:8px;color:var(--ink-2)"></ol></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap"><p>RC Calc Build: templates are generated from the designer's geometry. Check the fit of every part before gluing, and confirm the CG on the finished plane before flying.</p></div></footer>
+<div id="print-pages" aria-hidden="true"></div>
+
+<script src="assets/rc-common.js"></script>
+<script src="assets/rc-core.js"></script>
+<script src="assets/rc-aero.js"></script>
+<script src="assets/rc-templates.js"></script>
+<script src="assets/build.js"></script>
+</body>
+</html>

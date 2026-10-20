@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>RC Electronics &amp; Airframe Calculator</title>
+<link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('rcCalc.theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="assets/rc-style.css">
+</head>
+<body>
+
+<a class="skip" href="#calculator">Skip to calculator</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#calculator" aria-label="RC Calc home">
+      <svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg>
+      <span>RC Calc<small>Electronics &amp; Airframe</small></span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#calculator" data-nav="calculator">Calculator</a>
+      <a href="#diagram" data-nav="diagram">Diagram</a>
+      <a href="#learn" data-nav="learn">Learn</a>
+      <a href="designer.html">Designer</a>
+      <a href="build.html">Build</a>
+      <a href="simulator.html">Simulator</a>
+    </nav>
+    <div class="tools">
+      <div class="seg" role="radiogroup" aria-label="Unit system">
+        <input type="radio" name="unitSystem" id="us-metric" value="metric"><label for="us-metric">Metric</label>
+        <input type="radio" name="unitSystem" id="us-imperial" value="imperial"><label for="us-imperial">Imperial</label>
+      </div>
+      <button type="button" class="btn icon-only" id="theme-toggle" aria-pressed="false" aria-label="Use dark theme"><span class="ico"><svg aria-hidden="true"><use href="#i-moon"/></svg></span></button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<!-- ============ CALCULATOR ============ -->
+<section class="page" id="calculator" aria-labelledby="calc-title">
+  <div class="wrap">
+    <div class="section-head hero">
+      <div>
+        <div class="eyebrow">Calculator</div>
+        <h1 id="calc-title">RC Electronics &amp; Airframe Calculator</h1>
+        <p class="lede">Enter your plane's weight, wing and flying style. You get recommended power, battery, motor, prop, ESC, servos and receiver, with every number explained. These are rules of thumb and estimates. Verify them with eCalc or MotoCalc and a watt meter.</p>
+      </div>
+    </div>
+
+    <div class="calc-layout">
+      <form class="panel" id="calc-form" novalidate aria-label="Plane inputs" onsubmit="return false">
+        <fieldset class="group">
+          <legend><span class="ico"><svg aria-hidden="true"><use href="#i-weight"/></svg></span>Weight <a class="help" href="#learn-auw" aria-label="Learn about all-up weight">?</a></legend>
+          <div class="seg" role="radiogroup" aria-label="Weight input mode">
+            <input type="radio" name="weightMode" id="wm-auw" value="auw"><label for="wm-auw">Single AUW</label>
+            <input type="radio" name="weightMode" id="wm-budget" value="budget"><label for="wm-budget">Weight budget</label>
+          </div>
+          <div class="field">
+            <label for="f-auw">All-up weight (AUW)</label>
+            <div class="input-unit">
+              <input id="f-auw" type="number" inputmode="decimal" step="any" min="0" data-si="auw" data-dim="mass" aria-describedby="auw-hint">
+              <select id="u-auw" data-unit="auw" data-dim="mass" aria-label="Unit for all-up weight"></select>
+            </div>
+            <p class="hint" id="auw-hint">Everything that flies: airframe, electronics and battery.</p>
+          </div>
+          <div id="budget-box" hidden>
+            <div class="field">
+              <label for="u-budget">Budget unit</label>
+              <select id="u-budget" data-dim="mass" style="width:auto"></select>
+            </div>
+            <table class="budget">
+              <caption class="sr-only">Weight budget, sums to the all-up weight</caption>
+              <thead><tr><th scope="col">Item</th><th scope="col">Weight</th></tr></thead>
+              <tbody>
+                <tr><th scope="row"><label for="b-airframe">Airframe</label></th><td><input id="b-airframe" type="number" inputmode="decimal" step="any" min="0" data-budget="airframe"></td></tr>
+                <tr><th scope="row"><label for="b-motor">Motor</label></th><td><input id="b-motor" type="number" inputmode="decimal" step="any" min="0" data-budget="motor"></td></tr>
+                <tr><th scope="row"><label for="b-esc">ESC</label></th><td><input id="b-esc" type="number" inputmode="decimal" step="any" min="0" data-budget="esc"></td></tr>
+                <tr><th scope="row"><label for="b-servo">Servo (each) &times; count</label></th><td><div class="servo-cell"><input id="b-servo" type="number" inputmode="decimal" step="any" min="0" data-budget="servo"><span aria-hidden="true">&times;</span><label class="sr-only" for="b-servoN">Number of servos</label><input id="b-servoN" type="number" inputmode="numeric" step="1" min="0" data-budget-n></div></td></tr>
+                <tr><th scope="row"><label for="b-rx">Receiver</label></th><td><input id="b-rx" type="number" inputmode="decimal" step="any" min="0" data-budget="rx"></td></tr>
+                <tr><th scope="row"><label for="b-battery">Battery</label></th><td><input id="b-battery" type="number" inputmode="decimal" step="any" min="0" data-budget="battery"></td></tr>
+                <tr><th scope="row"><label for="b-prop">Prop</label></th><td><input id="b-prop" type="number" inputmode="decimal" step="any" min="0" data-budget="prop"></td></tr>
+                <tr><th scope="row"><label for="b-misc">Wiring / misc</label></th><td><input id="b-misc" type="number" inputmode="decimal" step="any" min="0" data-budget="misc"></td></tr>
+                <tr class="total"><th scope="row">Total AUW</th><td><output id="budget-total" aria-live="polite"></output></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="readout"><span id="badge250" class="badge"></span><small class="hint" style="margin:0">Check local regulations.</small></p>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend><span class="ico"><svg aria-hidden="true"><use href="#i-wing"/></svg></span>Wing <a class="help" href="#learn-wingloading" aria-label="Learn about wing loading">?</a></legend>
+          <div class="seg" role="radiogroup" aria-label="Wing input mode">
+            <input type="radio" name="wingMode" id="wg-dims" value="dims"><label for="wg-dims">Span &amp; chord</label>
+            <input type="radio" name="wingMode" id="wg-area" value="area"><label for="wg-area">Area directly</label>
+          </div>
+          <div class="field">
+            <label for="f-span">Wingspan</label>
+            <div class="input-unit"><input id="f-span" type="number" inputmode="decimal" step="any" min="0" data-si="span" data-dim="length"><select data-unit="span" data-dim="length" aria-label="Unit for wingspan"></select></div>
+          </div>
+          <div class="field" id="chord-field">
+            <label for="f-chord">Chord (rectangular wing)</label>
+            <div class="input-unit"><input id="f-chord" type="number" inputmode="decimal" step="any" min="0" data-si="chord" data-dim="length"><select data-unit="chord" data-dim="length" aria-label="Unit for chord"></select></div>
+          </div>
+          <div class="field" id="area-field" hidden>
+            <label for="f-area">Wing area</label>
+            <div class="input-unit"><input id="f-area" type="number" inputmode="decimal" step="any" min="0" data-si="area" data-dim="area"><select data-unit="area" data-dim="area" aria-label="Unit for wing area"></select></div>
+          </div>
+          <p class="readout" id="wing-readout"></p>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend><span class="ico"><svg aria-hidden="true"><use href="#i-style"/></svg></span>Flying style <a class="help" href="#learn-power" aria-label="Learn about power per kilogram">?</a></legend>
+          <div class="styles">
+            <label class="choice"><input type="radio" name="style" value="trainer"><b>Gentle trainer</b><span>100&ndash;150 W/kg &middot; T/W 0.5&ndash;0.8</span></label>
+            <label class="choice"><input type="radio" name="style" value="sport"><b>Sport</b><span>150&ndash;250 W/kg &middot; T/W about 1</span></label>
+            <label class="choice"><input type="radio" name="style" value="aerobatic"><b>Aerobatic</b><span>250+ W/kg &middot; T/W 1.5+</span></label>
+            <label class="choice"><input type="radio" name="style" value="glider"><b>Powered glider</b><span>80&ndash;120 W/kg &middot; T/W 0.3&ndash;0.6</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend><span class="ico"><svg aria-hidden="true"><use href="#i-battery"/></svg></span>Battery <a class="help" href="#learn-battery" aria-label="Learn about batteries">?</a></legend>
+          <div class="row2">
+            <div class="field">
+              <label for="f-cells">Cells (S)</label>
+              <select id="f-cells">
+                <option value="1">1S (3.7 V)</option><option value="2">2S (7.4 V)</option><option value="3">3S (11.1 V)</option>
+                <option value="4">4S (14.8 V)</option><option value="5">5S (18.5 V)</option><option value="6">6S (22.2 V)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-crating">C rating <a class="help" href="#learn-crating" aria-label="Learn about C rating">?</a></label>
+              <input id="f-crating" type="number" inputmode="decimal" step="any" min="0" placeholder="optional" data-num="cRating" data-optional>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-cap">Capacity</label>
+            <div class="input-unit"><input id="f-cap" type="number" inputmode="decimal" step="any" min="0" data-si="cap" data-dim="capacity"><select data-unit="cap" data-dim="capacity" aria-label="Unit for capacity"></select></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend><span class="ico"><svg aria-hidden="true"><use href="#i-motor"/></svg></span>Motor &amp; prop <small class="hint" style="margin:0">(optional)</small> <a class="help" href="#learn-kv" aria-label="Learn about motor KV">?</a></legend>
+          <div class="field">
+            <label for="f-kv">Motor KV (RPM per volt)</label>
+            <input id="f-kv" type="number" inputmode="decimal" step="any" min="0" placeholder="leave blank for a suggestion" data-num="kv" data-optional>
+          </div>
+          <div class="prop-row">
+            <div class="field" style="margin-bottom:0"><label for="f-propd">Prop diameter (in) <a class="help" href="#learn-prop" aria-label="Learn about propellers">?</a></label><input id="f-propd" type="number" inputmode="decimal" step="any" min="0" placeholder="e.g. 8" data-num="propD" data-optional></div>
+            <span class="x" aria-hidden="true">&times;</span>
+            <div class="field" style="margin-bottom:0"><label for="f-propp">Pitch (in)</label><input id="f-propp" type="number" inputmode="decimal" step="any" min="0" placeholder="e.g. 3.8" data-num="propP" data-optional></div>
+          </div>
+          <p class="hint">Props are sized in inches everywhere (8&times;3.8 = 8 in diameter, 3.8 in pitch). Leave blank to get a shortlist.</p>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend><span class="ico"><svg aria-hidden="true"><use href="#i-servo"/></svg></span>Controls &amp; flight <a class="help" href="#learn-receiver" aria-label="Learn about receivers and channels">?</a></legend>
+          <div class="field">
+            <label for="f-controls">Control surfaces</label>
+            <select id="f-controls"></select>
+          </div>
+          <label class="check"><input type="checkbox" id="f-flaps"> Flaps (adds 2 servos and 1 channel)</label>
+          <div class="field">
+            <label for="f-throttle">Average throttle for flight-time estimate: <output id="throttle-out" for="f-throttle" class="big"></output></label>
+            <input id="f-throttle" type="range" min="20" max="100" step="5" data-num="throttle" aria-describedby="thr-hint">
+            <p class="hint" id="thr-hint">Typical relaxed flying averages 40&ndash;60%.</p>
+          </div>
+        </fieldset>
+
+        <details class="assume" id="assumptions">
+          <summary>Advanced assumptions</summary>
+          <div class="row2">
+            <div class="field"><label for="a-clmax">CLmax</label><input id="a-clmax" type="number" step="any" min="0" data-num="clmax"></div>
+            <div class="field"><label for="a-cruise">Cruise &divide; stall</label><input id="a-cruise" type="number" step="any" min="0" data-num="cruiseFactor"></div>
+            <div class="field"><label for="a-vcell">Loaded V per cell</label><input id="a-vcell" type="number" step="any" min="0" data-num="vCell"></div>
+            <div class="field"><label for="a-rpmf">RPM load factor</label><input id="a-rpmf" type="number" step="any" min="0" data-num="rpmFactor"></div>
+            <div class="field"><label for="a-cp">Prop power coeff. Cp</label><input id="a-cp" type="number" step="any" min="0" data-num="cp"></div>
+            <div class="field"><label for="a-fm">Figure of merit</label><input id="a-fm" type="number" step="any" min="0" data-num="fm"></div>
+            <div class="field"><label for="a-usable">Usable battery fraction</label><input id="a-usable" type="number" step="any" min="0" max="1" data-num="usable"></div>
+            <div class="field"><label for="a-wpk">W/kg override</label><input id="a-wpk" type="number" step="any" min="0" placeholder="style default" data-num="wPerKg" data-optional></div>
+          </div>
+          <div class="field">
+            <label for="a-density">Air density</label>
+            <select id="a-density">
+              <option value="sea">Sea level standard (1.225 kg/m&sup3;)</option>
+              <option value="custom">Custom density</option>
+              <option value="alt">From altitude and temperature</option>
+            </select>
+          </div>
+          <div class="field" id="rho-field" hidden><label for="a-rho">Density (kg/m&sup3;)</label><input id="a-rho" type="number" step="any" min="0" data-num="rho"></div>
+          <div id="alt-fields" hidden>
+            <div class="field"><label for="f-alt">Field altitude</label><div class="input-unit"><input id="f-alt" type="number" step="any" data-si="altitude" data-dim="altitude"><select data-unit="altitude" data-dim="altitude" aria-label="Unit for altitude"></select></div></div>
+            <label class="check"><input type="checkbox" id="f-isa"> Use standard (ISA) temperature for this altitude</label>
+            <div class="field"><label for="f-temp">Air temperature</label><div class="input-unit"><input id="f-temp" type="number" step="any" data-si="temp" data-dim="temperature"><select data-unit="temp" data-dim="temperature" aria-label="Unit for temperature"></select></div></div>
+          </div>
+          <p class="readout" id="rho-readout"></p>
+        </details>
+
+        <div class="actions">
+          <button type="button" class="btn primary" id="btn-example"><span class="ico"><svg aria-hidden="true"><use href="#i-flask"/></svg></span>Load worked example</button>
+          <button type="button" class="btn" id="btn-reset"><span class="ico"><svg aria-hidden="true"><use href="#i-reset"/></svg></span>Reset</button>
+          <button type="button" class="btn" id="btn-share"><span class="ico"><svg aria-hidden="true"><use href="#i-link"/></svg></span>Share link</button>
+        </div>
+        <div class="field" id="share-field" hidden><label for="share-url">Shareable link</label><input id="share-url" type="text" readonly></div>
+      </form>
+
+      <div class="results" aria-labelledby="results-title">
+        <div class="results-head">
+          <h2 id="results-title" tabindex="-1">Results</h2>
+          <button type="button" class="btn no-print" id="btn-print"><span class="ico"><svg aria-hidden="true"><use href="#i-print"/></svg></span>Print results</button>
+        </div>
+        <p class="summary" id="summary" aria-live="polite" aria-atomic="true"></p>
+        <ul class="warnings" id="warnings" aria-live="polite" aria-label="Warnings and notes"></ul>
+        <div class="cards" id="cards"></div>
+
+        <div class="card wide" id="shortlist-card">
+          <h3><span class="ico"><svg aria-hidden="true"><use href="#i-prop"/></svg></span>Prop shortlist <span class="tag tag-estimate">Estimate</span> <a class="help" href="#learn-prop" aria-label="Learn about propellers">?</a></h3>
+          <p class="sub" id="shortlist-sub"></p>
+          <div class="table-scroll"><table class="data" id="shortlist-table"></table></div>
+          <details class="how"><summary>How it was calculated</summary><pre class="formula" id="shortlist-how"></pre></details>
+        </div>
+
+        <div class="card wide">
+          <h3><span class="ico"><svg aria-hidden="true"><use href="#i-motor"/></svg></span>Reference motor classes <span class="tag tag-rule">Rule of thumb</span></h3>
+          <p class="sub">Reference classes only. Check local availability and the manufacturer's data. The highlighted row is the smallest class rated for at least 1.5&times; your target power.</p>
+          <div class="table-scroll"><table class="data" id="ref-table"></table></div>
+        </div>
+
+        <p class="disclaimer"><span class="ico"><svg aria-hidden="true"><use href="#i-warn"/></svg></span><span><strong>Estimates, not guarantees.</strong> These results are rules of thumb and simplified physics. Real motors, props and batteries vary. Verify your setup with eCalc or MotoCalc, and measure current with a watt meter on a restrained bench test before flying.</span></p>
+      </div>
+    </div>
+
+    <section class="panel" id="units" aria-labelledby="units-title" style="margin-top:28px">
+      <div class="eyebrow">Units</div>
+      <h2 id="units-title" style="font-size:1.25rem;margin:4px 0 6px">Unit converter</h2>
+      <p class="hint" style="margin-bottom:12px">Everything is stored internally in SI units and converted only for display. Use the Metric / Imperial switch in the top bar, or pick a unit on any field.</p>
+      <div class="converter">
+        <div class="field" style="margin:0"><label for="cv-dim">Quantity</label><select id="cv-dim"></select></div>
+        <div class="field" style="margin:0"><label for="cv-val">Value</label><input id="cv-val" type="number" step="any" value="1"></div>
+        <div class="field" style="margin:0"><label for="cv-from">From</label><select id="cv-from"></select></div>
+        <button type="button" class="btn" id="cv-swap" aria-label="Swap from and to units"><span class="ico"><svg aria-hidden="true"><use href="#i-swap"/></svg></span>Swap</button>
+        <div class="field" style="margin:0"><label for="cv-to">To</label><select id="cv-to"></select></div>
+        <output class="out" id="cv-out" for="cv-val cv-from cv-to" aria-live="polite"></output>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ============ DIAGRAM ============ -->
+<section class="page" id="diagram" aria-labelledby="diag-title">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Diagram</div>
+        <h2 id="diag-title">Airframe diagram generator</h2>
+        <p class="lede">Top, side and front views redrawn live from your numbers. Control surfaces are hatched. The views also show the motor and prop disc, the CG with its recommended 25&ndash;33% MAC band, and the mean aerodynamic chord.</p>
+      </div>
+    </div>
+    <div class="diag-layout">
+      <form class="panel diag-controls" id="diag-form" novalidate aria-label="Diagram inputs" onsubmit="return false">
+        <div class="field"><label for="d-preset">Preset</label>
+          <select id="d-preset">
+            <option value="trainer">Conventional high-wing trainer</option>
+            <option value="lowwing">Low-wing sport</option>
+            <option value="flyingwing">Flying wing</option>
+            <option value="chuck">Chuck-glider style</option>
+          </select></div>
+        <label class="check"><input type="checkbox" id="d-link"> Link span &amp; wing area to the calculator</label>
+        <div class="row2">
+          <div class="field" style="margin:4px 0"><label for="d-unit">Length unit</label><select id="d-unit" data-dim="length"></select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:4px"><button type="button" class="btn" id="d-auto" style="width:100%;justify-content:center"><span class="ico"><svg aria-hidden="true"><use href="#i-magic"/></svg></span>Auto-proportion</button></div>
+        </div>
+        <p class="hint">Auto-proportion uses the span and flying style: horizontal tail about 20&ndash;25% of wing area, vertical tail about 8&ndash;10% (enlarged if needed to reach V<sub>v</sub> &asymp; 0.035), and a tail arm sized for V<sub>h</sub> &asymp; 0.5. Flying wings get tip fins. Every value stays editable.</p>
+        <div class="diag-fields">
+          <div class="field"><label for="d-span">Span</label><input id="d-span" type="number" step="any" min="0" data-diag="span"></div>
+          <div class="field"><label for="d-rootChord">Root chord</label><input id="d-rootChord" type="number" step="any" min="0" data-diag="rootChord"></div>
+          <div class="field"><label for="d-tipChord">Tip chord</label><input id="d-tipChord" type="number" step="any" min="0" data-diag="tipChord"></div>
+          <div class="field"><label for="d-sweep">LE sweep (&deg;)</label><input id="d-sweep" type="number" step="any" min="-10" max="45" data-diag-num="sweep"></div>
+          <div class="field"><label for="d-fuseLen">Fuselage length</label><input id="d-fuseLen" type="number" step="any" min="0" data-diag="fuseLen"></div>
+          <div class="field"><label for="d-tailArm">Tail arm (&frac14;MAC to &frac14;MAC)</label><input id="d-tailArm" type="number" step="any" min="0" data-diag="tailArm"></div>
+          <div class="field"><label for="d-hSpan">H-tail span</label><input id="d-hSpan" type="number" step="any" min="0" data-diag="hSpan"></div>
+          <div class="field"><label for="d-hChord">H-tail chord</label><input id="d-hChord" type="number" step="any" min="0" data-diag="hChord"></div>
+          <div class="field"><label for="d-vHeight">V-tail height</label><input id="d-vHeight" type="number" step="any" min="0" data-diag="vHeight"></div>
+          <div class="field"><label for="d-vChord">V-tail root chord</label><input id="d-vChord" type="number" step="any" min="0" data-diag="vChord"></div>
+          <div class="field"><label for="d-dihedral">Dihedral (&deg;)</label><input id="d-dihedral" type="number" step="any" min="-10" max="20" data-diag-num="dihedral"></div>
+          <div class="field"><label for="d-cg">CG (% of MAC)</label><input id="d-cg" type="number" step="any" min="0" max="100" data-diag-num="cg"></div>
+          <div class="field"><label for="d-motor">Motor position</label><select id="d-motor"><option value="tractor">Nose tractor</option><option value="pusher">Rear pusher</option></select></div>
+          <div class="field"><label for="d-mount">Wing mount</label><select id="d-mount"><option value="high">High wing</option><option value="mid">Mid wing</option><option value="low">Low wing</option></select></div>
+        </div>
+        <p class="hint">Set the H-tail span to 0 for a tailless design. The prop disc uses the calculator's prop (entered or suggested). The ailerons drawn follow the calculator's control setup.</p>
+      </form>
+      <div>
+        <div class="card diagram-box">
+          <div id="diagram-holder"></div>
+        </div>
+        <div class="chips" id="chips" aria-live="polite" aria-label="Sanity checks"></div>
+        <p class="readout" id="diag-readout"></p>
+        <div class="actions no-print">
+          <button type="button" class="btn" id="d-svg"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Download SVG</button>
+          <button type="button" class="btn" id="d-png"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Download PNG</button>
+          <button type="button" class="btn" id="d-print"><span class="ico"><svg aria-hidden="true"><use href="#i-print"/></svg></span>Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LEARN ============ -->
+<section class="page" id="learn" aria-labelledby="learn-title">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Learn</div>
+        <h2 id="learn-title">How the numbers work</h2>
+        <p class="lede">Plain-language explanations, each with a worked example you can load straight into the calculator.</p>
+      </div>
+    </div>
+    <p class="disclaimer" style="margin-top:0;margin-bottom:16px"><span class="ico"><svg aria-hidden="true"><use href="#i-warn"/></svg></span><span><strong>Disclaimer:</strong> Everything here is a rule of thumb or a simplified estimate meant to get you close. Always verify with eCalc or MotoCalc and a watt meter, follow the manufacturer's limits, and fly within local regulations.</span></p>
+    <div class="learn-grid">
+
+      <details class="lcard" id="learn-auw"><summary><span class="num">01</span><b>What is AUW (all-up weight)?</b></summary><div class="lbody">
+        <p>AUW is the weight of the plane <em>ready to fly</em>: airframe, motor, ESC, servos, receiver, battery, prop, glue, tape and wires. Every other number depends on it, so weigh the finished plane on a kitchen scale if you can.</p>
+        <p>The weight budget mode lets you plan before you build. Small things like wiring, connectors and hot glue easily add 5&ndash;10% of the total.</p>
+        <p>Many countries treat 250 g as a regulatory threshold (registration, Remote ID, pilot tests). The badge shows which side you are on. Always check your local rules.</p>
+        <div class="example"><b>Example:</b> airframe 80 g + motor 18 + ESC 10 + 2 servos &times; 9 + receiver 6 + 2S 850 mAh pack 50 + prop 6 + misc 12 = <b>200 g</b>. That is under 250 g.</div>
+        <button type="button" class="btn" data-example="budget">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-wingloading"><summary><span class="num">02</span><b>Wing loading and stall speed</b></summary><div class="lbody">
+        <p><b>Wing loading</b> is weight divided by wing area, usually in g/dm&sup2; (or oz/ft&sup2;). Lower wing loading means slower, gentler flight. Rough guide: under 20 g/dm&sup2; is floaty, 20&ndash;35 suits trainers and sport planes, and 45+ is fast and demanding.</p>
+        <p><b>Stall speed</b> is the slowest speed at which the wing can still carry the weight: <code>V = &radic;(2W / (&rho;&middot;S&middot;CLmax))</code>, where W is weight in newtons, &rho; is air density, S is area in m&sup2;, and CLmax is the wing's best lift coefficient (about 1.0 for a simple model airfoil). Cruise is typically 1.3&ndash;1.5&times; stall.</p>
+        <div class="example"><b>Example:</b> 200 g on 10 dm&sup2; gives 20 g/dm&sup2;. W = 0.2 &times; 9.81 = 1.962 N, so V<sub>stall</sub> = &radic;(2&times;1.962 / (1.225&times;0.1&times;1.0)) &asymp; <b>5.7 m/s</b> and cruise &asymp; 1.4 &times; 5.7 &asymp; <b>8 m/s</b>.</div>
+        <button type="button" class="btn" data-example="worked">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-thrust"><summary><span class="num">03</span><b>Thrust and thrust-to-weight ratio</b></summary><div class="lbody">
+        <p>Static thrust is the push the prop makes while the plane is held still. Thrust-to-weight (T/W) compares that to the plane's weight. A trainer flies well at 0.5&ndash;0.8, a sport plane around 1.0, and an aerobatic plane wants 1.5+ to hover and climb vertically.</p>
+        <p>The estimate uses momentum theory: <code>T = (FM &times; P &times; &radic;(2&rho;A))^(2/3)</code>, where A is the prop disc area and FM (figure of merit, about 0.5) covers real-world losses. Bigger discs make more thrust from the same power, which is why slow planes like large props.</p>
+        <div class="example"><b>Example:</b> a 600 g sport plane on 3S with a 1100 KV motor and a 9&times;4.7 prop. Target power is 120 W, and the estimated static thrust is about 730 gf, so T/W &asymp; 1.2.</div>
+        <button type="button" class="btn" data-example="sport600">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-power"><summary><span class="num">04</span><b>Power (W) and watts per kilogram</b></summary><div class="lbody">
+        <p>The simplest way to size the power system is watts per kilogram of AUW:</p>
+        <ul><li>Powered glider: 80&ndash;120 W/kg (default 100)</li><li>Gentle trainer: 100&ndash;150 W/kg (default 150)</li><li>Sport: 150&ndash;250 W/kg (default 200)</li><li>Aerobatic / 3D: 250+ W/kg (default 300)</li></ul>
+        <p>This is electrical input power at full throttle. It sets battery current, ESC size and motor size.</p>
+        <div class="example"><b>Example:</b> an 800 g aerobatic plane &times; 300 W/kg = <b>240 W</b>. With no KV or prop entered, the calculator suggests a combination.</div>
+        <button type="button" class="btn" data-example="aero800">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-battery"><summary><span class="num">05</span><b>Battery basics (LiPo)</b></summary><div class="lbody">
+        <p>A LiPo cell is <b>3.7 V nominal</b> and <b>4.2 V full</b>. Never discharge it below about 3.3 V at rest. Under load the voltage sags to about <b>3.5 V per cell</b>, so the calculator uses that for current. Packs are named by cell count in series: 2S = 7.4 V, 3S = 11.1 V.</p>
+        <p><b>mAh</b> (milliamp-hours) is capacity: 1000 mAh can deliver 1 A for one hour. Bigger packs fly longer but weigh more, and a small plane quickly runs out of room.</p>
+        <div class="example"><b>Example:</b> 3S is 11.1 V nominal, 12.6 V full and about 10.5 V loaded. 120 W &divide; 10.5 V &asymp; <b>11.4 A</b>.</div>
+        <button type="button" class="btn" data-example="sport600">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-crating"><summary><span class="num">06</span><b>C rating: continuous vs burst</b></summary><div class="lbody">
+        <p>The C rating says how fast a pack can be discharged: maximum current = C &times; capacity in Ah. A 450 mAh 20C pack is rated for 0.45 &times; 20 = 9 A <em>continuous</em>. The <em>burst</em> figure (often written 20C/40C) is only good for a few seconds. Size by the continuous number.</p>
+        <p>Required C = current &divide; (mAh &divide; 1000). Buy at least <b>1.5&times;</b> that, because labels are optimistic and packs run cooler, last longer and sag less with margin.</p>
+        <div class="example"><b>Example:</b> 4.29 A from a 450 mAh pack needs 4.29 &divide; 0.45 &asymp; 9.5C, so buy &ge; <b>15C</b>. The example loads a 10C pack so you can see the warning.</div>
+        <button type="button" class="btn" data-example="crating">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-flighttime"><summary><span class="num">07</span><b>Flight time</b></summary><div class="lbody">
+        <p>Flight time (minutes) = capacity in Ah &times; usable fraction &divide; average current &times; 60. Use only about <b>80%</b> of the pack so the LiPo stays healthy.</p>
+        <p>Full throttle gives the worst case. Most flights average 40&ndash;60% throttle. The calculator scales current linearly with throttle, which is conservative because real current falls faster than throttle.</p>
+        <div class="example"><b>Example:</b> 1000 mAh, 4.29 A at full throttle: 1.0 &times; 0.8 &divide; 4.29 &times; 60 &asymp; 11.2 min. At 50% average it is about 22 min.</div>
+        <button type="button" class="btn" data-example="flighttime">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-kv"><summary><span class="num">08</span><b>Motor KV and RPM</b></summary><div class="lbody">
+        <p>KV is RPM per volt with no load. A 1400 KV motor on 7.4 V would spin about 10,360 RPM with nothing attached. With a prop it slows to roughly <b>80%</b> of that (the RPM load factor).</p>
+        <p>Low KV turns big props slowly, which suits gliders and trainers. High KV turns small props fast for speed. More cells raise RPM and power with the same motor, so always check the prop is still within the motor's limits.</p>
+        <div class="example"><b>Example:</b> 0.8 &times; 1400 KV &times; (2 &times; 3.7 V) = <b>8288 RPM</b> loaded.</div>
+        <button type="button" class="btn" data-example="worked">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-prop"><summary><span class="num">09</span><b>Propeller diameter, pitch and pitch speed</b></summary><div class="lbody">
+        <p>A prop's name gives diameter &times; pitch in inches. Pitch is how far it would screw forward in one turn. <b>Pitch speed</b> = RPM &times; pitch &times; 0.0254 &divide; 60 m/s is roughly the top speed. Aim for <b>1.5&ndash;2.0&times; cruise</b>.</p>
+        <p><b>Diameter matters most.</b> The load on the motor grows roughly with the 4th power of diameter (at fixed pitch ratio and RPM; the full power formula <code>P = Cp&middot;&rho;&middot;n&sup3;&middot;D&#8309;</code> grows even faster). Going from 8&Prime; to 9&Prime; adds about (9/8)&#8308; &asymp; 60% load, enough to overheat a small motor. Bigger, slower props give more static thrust per watt. Smaller, faster props give more top speed.</p>
+        <div class="example"><b>Example:</b> the 200 g trainer on 1400 KV/2S with a 9&times;4.7 instead of an 8&times;3.8. The prop absorbs about 81 W instead of 45 W, and pitch speed jumps to over 2&times; cruise. The calculator flags both.</div>
+        <button type="button" class="btn" data-example="bigprop">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-motor"><summary><span class="num">10</span><b>Motor sizing</b></summary><div class="lbody">
+        <p>Brushless outrunners make roughly <b>3.3 W per gram</b> of motor weight. Pick a motor whose <b>maximum power rating is at least 1.5&times;</b> your target power so it runs cool. Suggested motor weight &asymp; 1.5 &times; P &divide; 3.3.</p>
+        <p>Reference classes (check local availability):</p>
+        <ul>
+          <li><b>E-flite Park 180</b>: 8.5 g, 2200 KV, up to 30 W, props 3&times;3 to 6&times;3 on 2S</li>
+          <li><b>E-flite Park 300</b>: 24 g, 1380 KV, up to 85 W, 7 A continuous, props up to 10&times;3.8 on 2S</li>
+          <li><b>E-flite Park 370</b>: 45 g, 1360 KV, up to 150 W, 12 A continuous, props 8&times;3.8 to 10&times;4.7</li>
+        </ul>
+        <div class="example"><b>Example:</b> 30 W target, so the motor should be rated &ge; 45 W and weigh about 1.5 &times; 30 &divide; 3.3 &asymp; <b>14 g</b>. That puts it in the Park 300 class.</div>
+        <button type="button" class="btn" data-example="worked">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-esc"><summary><span class="num">11</span><b>ESC sizing and BEC</b></summary><div class="lbody">
+        <p>The ESC (electronic speed controller) should be rated for <b>1.25&ndash;1.5&times;</b> the full-throttle current, then round up to a common size (10, 12, 15, 20, 30, 40 A&hellip;). Mount it where it gets airflow.</p>
+        <p>The <b>BEC</b> (battery eliminator circuit) inside most ESCs supplies 5 V to the receiver and servos. Small linear BECs are fine for 2&ndash;4 micro servos on 2&ndash;3S. On 4S and up, or with many or large servos, use a switching BEC or a separate UBEC.</p>
+        <div class="example"><b>Example:</b> 11.4 A at full throttle: 1.25&ndash;1.5&times; gives 15&ndash;18 A, so buy a <b>20 A</b> ESC.</div>
+        <button type="button" class="btn" data-example="sport600">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-receiver"><summary><span class="num">12</span><b>Receiver, channels and failsafe</b></summary><div class="lbody">
+        <p>Each independently controlled function needs a channel: throttle, ailerons, elevator, rudder, flaps. Two aileron servos on a Y-lead share one channel. Elevons on a flying wing need 2 channels mixed in the transmitter. A 6-channel system such as the <b>FlySky FS-i6</b> (AFHDS 2A protocol) covers most beginner planes and leaves spare channels for flight modes.</p>
+        <p><b>Failsafe</b> decides what happens when the signal is lost. Always set it so the throttle goes to <b>idle/off</b>, and test it on the bench by switching the transmitter off with the prop removed.</p>
+        <div class="example"><b>Example:</b> a low-wing sport plane with 2 aileron servos, elevator, rudder and flaps needs 6 servos and 5 channels (throttle, aileron, elevator, rudder, flaps).</div>
+        <button type="button" class="btn" data-example="receiver">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard" id="learn-cg"><summary><span class="num">13</span><b>Center of gravity, dihedral and tail volume</b></summary><div class="lbody">
+        <p><b>CG</b> is the balance point. A conventional plane is usually balanced at <b>25&ndash;33% of the mean aerodynamic chord (MAC)</b> back from its leading edge. Nose-heavy is sluggish but flyable. Tail-heavy is often unflyable. MAC is the "average" chord of a tapered wing, and the diagram draws it for you.</p>
+        <p><b>Dihedral</b> (wings tilted up toward the tips) makes the plane roll level on its own. Trainers use 3&ndash;6&deg;, rudder-only planes more, and aerobatic planes about 0&deg;.</p>
+        <p><b>Tail volume</b> measures how powerful the tail is: <code>V<sub>h</sub> = S<sub>h</sub>&middot;l<sub>h</sub> / (S&middot;MAC)</code> (typical 0.35&ndash;0.6) and <code>V<sub>v</sub> = S<sub>v</sub>&middot;l<sub>v</sub> / (S&middot;b)</code> (typical 0.02&ndash;0.05). A longer tail arm or bigger tail gives more stability.</p>
+        <div class="example"><b>Example:</b> wing 10 dm&sup2;, MAC 100 mm, H-tail 2.2 dm&sup2; at 227 mm arm gives V<sub>h</sub> = 0.022 &times; 0.227 / (0.1 &times; 0.1) &asymp; <b>0.50</b>.</div>
+        <button type="button" class="btn" data-example="worked" data-diagram="trainer">Load this example (calculator and trainer diagram)</button>
+      </div></details>
+
+      <details class="lcard" id="learn-materials"><summary><span class="num">14</span><b>Materials: Depron, foam board, chuck-glider conversions</b></summary><div class="lbody">
+        <p><b>Depron / EPP sheets</b> (3&ndash;6 mm) are light and easy to cut, and they suit park flyers. <b>Paper-faced foam board</b> (as used in many scratch-build plans) is cheap and stiff but a little heavier. Peel the paper off one side to bend curves. Reinforce wings with a carbon or bamboo spar.</p>
+        <p><b>Converting a chuck glider</b>: add a 1S micro motor as a pusher behind the wing, a tiny ESC/receiver (or a brick), and 2 micro servos for rudder and elevator. Keep the total under about 70 g, and re-check the CG because the battery usually goes in the nose.</p>
+        <div class="example"><b>Example:</b> a 48 cm span &times; 8 cm chord glider at 65 g on 1S 300 mAh, powered-glider style. That needs about 6.5 W, and the calculator suggests a small high-KV motor.</div>
+        <button type="button" class="btn" data-example="chuck" data-diagram="chuck">Load this example (calculator and chuck diagram)</button>
+      </div></details>
+
+      <details class="lcard" id="learn-safety"><summary><span class="num">15</span><b>Safety: LiPos, props and bench tests</b></summary><div class="lbody">
+        <ul>
+          <li>Charge LiPos with a balance charger, on a non-flammable surface or in a LiPo bag, and never unattended. Store them at about 3.8 V per cell. Retire puffy or damaged packs.</li>
+          <li>Treat a powered motor as live. Plug in the battery last, with the throttle at zero and your hands clear of the prop disc.</li>
+          <li>Do bench tests with the plane <b>restrained</b>, with nobody in line with the prop, wearing eye protection. Use a watt meter to confirm current stays below the ESC, motor and battery ratings.</li>
+          <li>Balance props, tighten prop nuts, and replace any chipped or cracked prop.</li>
+        </ul>
+        <div class="example"><b>Example:</b> the worked example predicts about 4.3 A at full throttle. On the bench your watt meter should read near that. If it reads much higher, use a smaller prop.</div>
+        <button type="button" class="btn" data-example="worked">Load this example into the calculator</button>
+      </div></details>
+
+      <details class="lcard glossary" id="glossary"><summary><span class="num">A&ndash;Z</span><b>Glossary</b></summary><div class="lbody">
+        <dl>
+          <dt>AUW</dt><dd>All-up weight: everything that flies, including the battery.</dd>
+          <dt>AFHDS 2A</dt><dd>FlySky's 2.4 GHz radio protocol used by the FS-i6 and compatible receivers.</dd>
+          <dt>Aspect ratio (AR)</dt><dd>Span&sup2; &divide; area. High AR (gliders) is efficient. Low AR is agile and strong.</dd>
+          <dt>BEC / UBEC</dt><dd>Battery eliminator circuit: 5 V supply for the receiver and servos. A UBEC is a separate switching unit.</dd>
+          <dt>C rating</dt><dd>Maximum continuous discharge as a multiple of capacity.</dd>
+          <dt>CG</dt><dd>Center of gravity, the balance point.</dd>
+          <dt>CLmax</dt><dd>Maximum lift coefficient of the wing, about 1.0 for simple model airfoils.</dd>
+          <dt>Cp</dt><dd>Prop power coefficient used in P = Cp&middot;&rho;&middot;n&sup3;&middot;D&#8309;.</dd>
+          <dt>Dihedral</dt><dd>Upward angle of the wings, which gives roll stability.</dd>
+          <dt>ESC</dt><dd>Electronic speed controller that drives the brushless motor.</dd>
+          <dt>Failsafe</dt><dd>What the receiver outputs when the signal is lost. Set the throttle to off.</dd>
+          <dt>Figure of merit</dt><dd>Static prop efficiency compared with ideal momentum theory (about 0.5).</dd>
+          <dt>KV</dt><dd>Motor RPM per volt with no load.</dd>
+          <dt>LiPo, 1S/2S/3S</dt><dd>Lithium-polymer battery. The number is how many 3.7 V cells are in series.</dd>
+          <dt>MAC</dt><dd>Mean aerodynamic chord, the "average" chord used for CG and tail volume.</dd>
+          <dt>Outrunner</dt><dd>Brushless motor whose outer can spins. It is common on park flyers.</dd>
+          <dt>Pitch speed</dt><dd>Theoretical airspeed from prop pitch &times; RPM.</dd>
+          <dt>Static thrust</dt><dd>Thrust with the plane held still.</dd>
+          <dt>Stall speed</dt><dd>Slowest speed at which the wing still supports the plane.</dd>
+          <dt>Tail volume</dt><dd>Dimensionless measure of tail effectiveness (V<sub>h</sub>, V<sub>v</sub>).</dd>
+          <dt>T/W</dt><dd>Thrust-to-weight ratio.</dd>
+          <dt>Wing loading</dt><dd>Weight per wing area (g/dm&sup2; or oz/ft&sup2;).</dd>
+          <dt>W/kg</dt><dd>Power per kilogram, the main sizing rule of thumb.</dd>
+        </dl>
+      </div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ADVANCED ============ -->
+<section class="page" id="advanced" aria-labelledby="adv-title">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Advanced</div>
+        <h2 id="adv-title">Advanced: Aircraft Designer &amp; Build</h2>
+        <p class="lede">Go beyond rules of thumb. Size a plane from your requirements, check stability and performance, match a motor, view it in 3D, and print full-size building templates.</p>
+      </div>
+    </div>
+    <div class="hero-links">
+      <a class="card" href="designer.html"><b><span class="ico"><svg aria-hidden="true"><use href="#i-magic"/></svg></span>Aircraft Designer</b><p>Mission-to-airframe sizing with a weight model, an airfoil picker (with .dat import), neutral point and static margin, multi-panel CG, lifting-line wing analysis, performance curves, motor and prop matching, a 3D model with STL export, and save and compare.</p></a>
+      <a class="card" href="build.html"><b><span class="ico"><svg aria-hidden="true"><use href="#i-scissors"/></svg></span>Build templates &amp; parts</b><p>Printable 1:1 templates for Foam/Depron (KFm or folded foam board) or Balsa (ribs, building plan, formers), tiled on A5, Letter or A4 with alignment marks. Plus a cutting list and an editable parts and cost list.</p></a>
+      <a class="card" href="simulator.html"><b><span class="ico"><svg aria-hidden="true"><use href="#i-play"/></svg></span>Flight simulator</b><p>Fly the built-in models or your own design: Xbox controller, an RC transmitter via a USB adapter, or the keyboard. Includes lessons, automatic test flights compared with the Designer, wind and thermals, replay, and 3D model import.</p></a>
+      <a class="card" href="designer.html#d-3d"><b><span class="ico"><svg aria-hidden="true"><use href="#i-cube"/></svg></span>3D model</b><p>An interactive 3D view lofted from your airfoil and geometry. Orbit, zoom, export a PNG or an STL in millimetres.</p></a>
+    </div>
+    <p class="hint" style="margin-top:14px">All pages work offline from your disk and share your design through this browser's storage or a link.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>RC Electronics &amp; Airframe Calculator: a single-file educational tool. It works offline, makes no network requests, and keeps your inputs in this browser only. Results are rules of thumb and estimates. Verify them with eCalc or MotoCalc and a watt meter.</p>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:20px">This calculator needs JavaScript enabled.</p></noscript>
+<script src="assets/rc-common.js"></script>
+<script src="assets/rc-core.js"></script>
+<script src="assets/rc-diagram.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   6. UI: state, binding, rendering
+   ===================================================================== */
+const STORE_KEY = 'rcCalc.v1', THEME_KEY = 'rcCalc.theme';
+const OPTIONAL_NUM = ['kv', 'propD', 'propP', 'cRating', 'wPerKg'];
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const icon = id => `<span class="ico"><svg aria-hidden="true"><use href="#i-${id}"/></svg></span>`;
+const TAGS = { physics:'Physics', estimate:'Estimate', rule:'Rule of thumb' };
+const RESULT_DIMS = { wl:'wingLoading', vs:'speed', vc:'speed', ps:'speed', T:'force', motor:'mass' };
+
+function defaultState(){
+  return {
+    v:1, weightMode:'auw', wingMode:'dims', style:'trainer', cells:2, controls:'re', flaps:false, densityMode:'sea', isaTemp:true,
+    si:{ auw:0.2, span:1.0, chord:0.1, area:0.1, cap:0.85, altitude:0, temp:15 },
+    num:{ kv:1400, propD:8, propP:3.8, cRating:null, throttle:50, clmax:1.0, rho:1.225, vCell:3.5, rpmFactor:0.8, cp:0.04, fm:0.5, usable:0.8, cruiseFactor:1.4, wPerKg:null },
+    budget:{ airframe:0.08, motor:0.018, esc:0.010, servo:0.009, servoN:2, rx:0.006, battery:0.050, prop:0.006, misc:0.012 },
+    units:systemUnits(window.RC ? RC.unitSystem() : 'metric'),
+    diagLink:true,
+    diagram:autoProportion('trainer', 1.0, 'trainer', 0.1),
+  };
+}
+function systemUnits(sys){
+  const u = k => DIMS[k][sys];
+  return { system:sys, fields:{ auw:u('mass'), span:u('length'), chord:u('length'), area:u('area'), cap:u('capacity'), altitude:u('altitude'), temp:u('temperature') },
+    budget:u('mass'), diagram:u('length'), results:Object.fromEntries(Object.entries(RESULT_DIMS).map(([k, d]) => [k, u(d)])) };
+}
+function mergeState(base, src){
+  if (!src || typeof src !== 'object') return base;
+  for (const k of Object.keys(base)) {
+    if (!(k in src)) continue;
+    const b = base[k], s = src[k];
+    if (b && typeof b === 'object' && !Array.isArray(b)) { if (s && typeof s === 'object') mergeState(b, s); }
+    else if (b === null || typeof s === typeof b) { if (b === null && s !== null && typeof s !== 'number') continue; base[k] = s; }
+  }
+  return base;
+}
+function sanitizeUnits(st){
+  for (const [k, u] of Object.entries(st.units.fields)) { const dim = { auw:'mass', span:'length', chord:'length', area:'area', cap:'capacity', altitude:'altitude', temp:'temperature' }[k]; if (!DIMS[dim].units[u]) st.units.fields[k] = DIMS[dim].metric; }
+  for (const [k, d] of Object.entries(RESULT_DIMS)) if (!DIMS[d].units[st.units.results[k]]) st.units.results[k] = DIMS[d].metric;
+  if (!DIMS.mass.units[st.units.budget]) st.units.budget = 'g';
+  if (!DIMS.length.units[st.units.diagram]) st.units.diagram = 'mm';
+  if (!STYLES[st.style]) st.style = 'trainer';
+  if (!CONTROLS[st.controls]) st.controls = 're';
+  if (!PRESETS[st.diagram.preset]) st.diagram.preset = 'trainer';
+  return st;
+}
+function b64urlEncode(str){ const bytes = new TextEncoder().encode(str); let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b)); return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function b64urlDecode(s){ s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const bin = atob(s); return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))); }
+function loadState(){
+  let src = null;
+  try { if (location.hash.startsWith('#cfg=')) src = JSON.parse(b64urlDecode(location.hash.slice(5))); } catch (e) { src = null; }
+  if (!src) { try { const raw = localStorage.getItem(STORE_KEY); if (raw) src = JSON.parse(raw); } catch (e) { src = null; } }
+  const st = mergeState(defaultState(), src);
+  if (src && src.num) for (const k of OPTIONAL_NUM) if (src.num[k] === null || (typeof src.num[k] === 'number' && src.num[k] > 0)) st.num[k] = src.num[k];
+  return sanitizeUnits(st);
+}
+
+let saveTimer = null;
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ } }, 250); }
+
+let state = loadState();
+let lastInp = null, lastR = null;
+
+/* ---------- gather inputs (SI) ---------- */
+const budgetTotal = bd => bd.airframe + bd.motor + bd.esc + bd.servo * bd.servoN + bd.rx + bd.battery + bd.prop + bd.misc;
+function currentRho(){
+  if (state.densityMode === 'custom') return state.num.rho;
+  if (state.densityMode === 'alt') return state.isaTemp ? Phys.densityFromAltitude(state.si.altitude) : Phys.densityFromAltTemp(state.si.altitude, state.si.temp);
+  return RHO_SL;
+}
+function gatherInputs(){
+  const s = state, n = s.num;
+  return {
+    auw_kg: s.weightMode === 'budget' ? budgetTotal(s.budget) : s.si.auw,
+    area_m2: s.wingMode === 'dims' ? s.si.span * s.si.chord : s.si.area,
+    span_m: s.si.span, style:s.style, wPerKg:n.wPerKg, cells:s.cells, cap_Ah:s.si.cap, cRating:n.cRating,
+    kv:n.kv, propD:n.propD, propP:n.propP, clmax:n.clmax, rho:currentRho(), vCell:n.vCell, rpmFactor:n.rpmFactor,
+    cp:n.cp, fm:n.fm, usable:n.usable, cruiseFactor:n.cruiseFactor, throttle:n.throttle / 100, controls:s.controls, flaps:s.flaps,
+  };
+}
+
+/* ---------- result cards ---------- */
+const CARDS = [
+  { key:'wl', label:'Wing loading', icon:'wl', tag:'physics', learn:'learn-wingloading', si:R => R.wl * 0.1,
+    sub:(i, R) => R.wl < 20 ? 'Light: slow and floaty' : R.wl <= 35 ? 'Moderate: trainer / sport range' : 'Heavy: fast, needs skill',
+    how:(i, R) => [`Wing loading = AUW ÷ wing area`, `  = ${fmt(i.auw_kg*1000,1)} g ÷ ${fmt(i.area_m2*100,2)} dm²`, `  = ${fmt(R.wl,1)} g/dm²   (= ${fmt(R.wl/3.0515,2)} oz/ft²)`] },
+  { key:'vs', label:'Stall speed', icon:'gauge', tag:'physics', learn:'learn-wingloading', si:R => R.vs,
+    sub:i => `CLmax ${i.clmax}, ρ ${fmt(i.rho,3)} kg/m³`,
+    how:(i, R) => { const W = i.auw_kg*G; return [`V_stall = √( 2·W / (ρ·S·CLmax) )`, `W = ${fmt(i.auw_kg,3)} kg × 9.81 = ${fmt(W,3)} N`, `V_stall = √( 2 × ${fmt(W,3)} / (${fmt(i.rho,3)} × ${fmt(i.area_m2,4)} m² × ${i.clmax}) )`, `  = √${fmt(R.vs*R.vs,2)} = ${fmt(R.vs,2)} m/s`]; } },
+  { key:'vc', label:'Cruise speed', icon:'gauge', tag:'rule', learn:'learn-wingloading', si:R => R.vc,
+    sub:i => `${i.cruiseFactor} × stall (typical 1.3–1.5)`,
+    how:(i, R) => [`V_cruise ≈ ${i.cruiseFactor} × V_stall   (range 1.3–1.5)`, `  = ${i.cruiseFactor} × ${fmt(R.vs,2)} = ${fmt(R.vc,2)} m/s`] },
+  { key:'P', label:'Target power', icon:'bolt', tag:'rule', learn:'learn-power', unit:'W', val:R => R.P, dec:1,
+    sub:(i, R) => `${R.wpk} W/kg · ${R.style.label}`,
+    how:(i, R) => [`P = AUW × W/kg`, `  = ${fmt(i.auw_kg,3)} kg × ${R.wpk} W/kg = ${fmt(R.P,1)} W`, `${R.style.label} range ${R.style.wRange[0]}–${R.style.wRange[1]} W/kg → ${fmt(i.auw_kg*R.style.wRange[0],1)}–${fmt(i.auw_kg*R.style.wRange[1],1)} W`] },
+  { key:'I', label:'Battery current (full throttle)', icon:'battery', tag:'physics', learn:'learn-battery', unit:'A', val:R => R.I, dec:2,
+    sub:(i, R) => `${fmt(R.V,1)} V loaded (${i.cells}S × ${i.vCell} V)`,
+    how:(i, R) => [`V_loaded = cells × ${i.vCell} V = ${i.cells} × ${i.vCell} = ${fmt(R.V,2)} V`, `I = P ÷ V = ${fmt(R.P,1)} W ÷ ${fmt(R.V,2)} V = ${fmt(R.I,2)} A`] },
+  { key:'C', label:'Required C rating', icon:'c', tag:'physics', learn:'learn-crating', unit:'C', val:R => R.reqC, dec:1,
+    sub:(i, R) => `Buy ≥ ${R.recC}C continuous${i.cRating > 0 ? ` · yours ${fmt(i.cRating,0)}C ${i.cRating >= R.recC ? '(OK)' : '(too low)'}` : ''}`,
+    how:(i, R) => [`C_required = I ÷ (capacity_mAh ÷ 1000)`, `  = ${fmt(R.I,2)} A ÷ (${fmt(i.cap_Ah*1000,0)} ÷ 1000) = ${fmt(R.reqC,2)} C`, `Recommended = ceil(1.5 × ${fmt(R.reqC,2)}) = ${R.recC} C`, i.cRating > 0 ? `Your pack: ${fmt(i.cRating,0)}C → ${i.cRating >= R.recC ? 'meets the recommendation' : 'below the recommendation'}` : `(Enter your pack's C rating to compare.)`] },
+  { key:'tFull', label:'Flight time, full throttle', icon:'clock', tag:'estimate', learn:'learn-flighttime', unit:'min', val:R => R.tFull, dec:1,
+    sub:i => `${fmt(i.cap_Ah*1000,0)} mAh, ${fmt(i.usable*100,0)}% usable`,
+    how:(i, R) => [`t = capacity_Ah × ${i.usable} ÷ I × 60`, `  = ${fmt(i.cap_Ah,3)} × ${i.usable} ÷ ${fmt(R.I,2)} × 60 = ${fmt(R.tFull,1)} min`] },
+  { key:'tAvg', label:i => `Flight time at ${fmt(i.throttle*100,0)}% throttle`, icon:'clock', tag:'estimate', learn:'learn-flighttime', unit:'min', val:R => R.tAvg, dec:1,
+    sub:(i, R) => `average current ≈ ${fmt(R.Iavg,2)} A`,
+    how:(i, R) => [`I_avg ≈ I_full × throttle = ${fmt(R.I,2)} × ${fmt(i.throttle,2)} = ${fmt(R.Iavg,2)} A`, `t = ${fmt(i.cap_Ah,3)} × ${i.usable} ÷ ${fmt(R.Iavg,2)} × 60 = ${fmt(R.tAvg,1)} min`, `Linear approximation. Real current usually falls faster than throttle.`] },
+  { key:'rpm', label:'Loaded RPM', icon:'rpm', tag:'estimate', learn:'learn-kv', unit:'RPM', val:R => R.rpm, dec:0,
+    sub:(i, R) => `${fmt(R.kv,0)} KV${R.kvSrc === 'suggested' ? ' (suggested)' : ''} on ${i.cells}S`,
+    how:(i, R) => [`RPM = ${i.rpmFactor} × KV × (cells × 3.7 V)`, `  = ${i.rpmFactor} × ${fmt(R.kv,0)} × (${i.cells} × 3.7) = ${fmt(R.rpm,0)} RPM`].concat(R.kvSrc === 'suggested' ? [`KV ${fmt(R.kv,0)} is a suggestion: it makes the ${R.prop.d}×${R.prop.p} prop absorb ≈ ${fmt(R.P,0)} W.`] : []) },
+  { key:'ps', label:'Pitch speed', icon:'thrust', tag:'physics', learn:'learn-prop', si:R => R.pitchSpeed, warnKey:'ps',
+    sub:(i, R) => `${fmt(R.pitchRatio,2)}× cruise · aim 1.5–2.0×`,
+    how:(i, R) => [`V_pitch = RPM × pitch_in × 0.0254 ÷ 60`, `  = ${fmt(R.rpm,0)} × ${R.prop.p} × 0.0254 ÷ 60 = ${fmt(R.pitchSpeed,2)} m/s`, `Ratio = ${fmt(R.pitchSpeed,2)} ÷ ${fmt(R.vc,2)} (cruise) = ${fmt(R.pitchRatio,2)}×`] },
+  { key:'pp', label:'Prop power absorbed', icon:'prop', tag:'estimate', learn:'learn-prop', unit:'W', val:R => R.propPower, dec:1, warnKey:'pp',
+    sub:(i, R) => `${R.prop.d}×${R.prop.p}${R.prop.src === 'suggested' ? ' (suggested)' : ''} at ${fmt(R.rpm,0)} RPM`,
+    how:(i, R) => { const n = R.rpm/60, D = R.prop.d*0.0254; return [`P_prop = Cp × ρ × n³ × D⁵   (n = RPM/60, D in m)`, `n = ${fmt(R.rpm,0)}/60 = ${fmt(n,2)} rev/s,  D = ${R.prop.d} in = ${fmt(D,4)} m`, `  = ${i.cp} × ${fmt(i.rho,3)} × ${fmt(n,2)}³ × ${fmt(D,4)}⁵ = ${fmt(R.propPower,1)} W`, `Target ${fmt(R.P,1)} W · motor rating ≥ ${fmt(R.motorRating,0)} W`]; } },
+  { key:'T', label:'Static thrust', icon:'thrust', tag:'estimate', learn:'learn-thrust', si:R => R.thrust,
+    sub:(i, R) => `${R.prop.d}×${R.prop.p}, ${fmt(R.Pthrust,1)} W into prop`,
+    how:(i, R) => { const A = Phys.discArea(R.prop.d); return [`T = (FM × P × √(2·ρ·A))^(2/3),  A = π/4 × D²`, `D = ${fmt(R.prop.d*0.0254,4)} m → A = ${fmt(A,5)} m²`, `P = min(target ${fmt(R.P,1)} W, prop absorbs ${fmt(R.propPower,1)} W) = ${fmt(R.Pthrust,1)} W`, `T = (${i.fm} × ${fmt(R.Pthrust,1)} × √(2 × ${fmt(i.rho,3)} × ${fmt(A,5)}))^(2/3)`, `  = ${fmt(R.thrust,3)} N = ${fmt(R.thrust*101.972,0)} gf`]; } },
+  { key:'tw', label:'Thrust-to-weight', icon:'ratio', tag:'estimate', learn:'learn-thrust', unit:': 1', val:R => R.tw, dec:2, warnKey:'tw',
+    sub:(i, R) => `target ${R.style.tw[0]}–${R.style.tw[1]} for ${R.style.label.toLowerCase()}`,
+    how:(i, R) => [`T/W = thrust ÷ weight`, `  = ${fmt(R.thrust,3)} N ÷ (${fmt(i.auw_kg,3)} × 9.81) N = ${fmt(R.tw,2)}`, `Targets: trainer 0.5–0.8, sport ≈ 1.0, aerobatic 1.5+`] },
+  { key:'motor', label:'Motor weight & rating', icon:'motor', tag:'rule', learn:'learn-motor', si:R => R.motorW / 1000,
+    sub:(i, R) => `≥ ${fmt(R.motorRating,0)} W max · ${R.motorRef ? R.motorRef.name.replace('E-flite ', '') + ' class' : 'above Park 370 class'}`,
+    how:(i, R) => [`Motor weight ≈ 1.5 × P ÷ 3.3 W/g   (outrunners ≈ 3.3 W per gram)`, `  = 1.5 × ${fmt(R.P,1)} ÷ 3.3 = ${fmt(R.motorW,1)} g`, `Max-power rating ≥ 1.5 × ${fmt(R.P,1)} = ${fmt(R.motorRating,0)} W`, R.motorRef ? `Smallest reference class with ≥ ${fmt(R.motorRating,0)} W: ${R.motorRef.name} (${R.motorRef.mass} g, ${R.motorRef.maxW} W)` : `Larger than the Park 370 reference: look at 400/450-size outrunners rated ≥ ${fmt(R.motorRating,0)} W.`] },
+  { key:'esc', label:'ESC size', icon:'chip', tag:'rule', learn:'learn-esc', unit:'A', val:R => R.escRec, dec:0,
+    sub:(i, R) => `needs ${R.escMin}–${R.escMax} A · ${i.cells >= 4 ? 'use switching BEC' : 'built-in BEC OK'}`,
+    how:(i, R) => [`ESC ≥ 1.25–1.5 × I = ${fmt(1.25*R.I,2)}–${fmt(1.5*R.I,2)} A → ceil → ${R.escMin}–${R.escMax} A`, `Next common size ≥ ${R.escMax} A: ${R.escRec} A`, `BEC: a built-in linear BEC is fine for 2–4 micro servos on 2–3S. For 4S+ or bigger servos, use a switching BEC/UBEC.`] },
+  { key:'servo', label:'Servos', icon:'servo', tag:'rule', learn:'learn-receiver', unit:'servos', val:R => R.servos, dec:0,
+    sub:(i, R) => R.controls.label,
+    how:(i, R) => [`${R.controls.label}: ${R.controls.servos} servos`].concat(i.flaps ? [`+ flaps: 2 servos`] : []).concat([`= ${R.servos} servos (9 g micro servos suit most planes under 600 g)`]) },
+  { key:'ch', label:'Receiver channels', icon:'antenna', tag:'rule', learn:'learn-receiver', unit:'ch', val:R => R.channels, dec:0,
+    sub:() => 'e.g. FlySky FS-i6 (6 ch, AFHDS 2A)',
+    how:(i, R) => [`Throttle (1) + control channels (${R.controls.channels - 1})${i.flaps ? ' + flaps (1)' : ''} = ${R.channels}`, `A 6-channel radio such as the FlySky FS-i6 (AFHDS 2A) covers this and leaves spare channels.`, `Set failsafe so throttle goes to idle/off on signal loss.`] },
+  { key:'ar', label:'Aspect ratio', icon:'ruler', tag:'physics', learn:'learn-cg', unit:'', val:R => R.ar, dec:1,
+    sub:(i, R) => R.ar == null ? '' : R.ar < 5 ? 'Low: agile, sturdy' : R.ar <= 8 ? 'Typical trainer / sport' : 'High: efficient, glider-like',
+    how:(i, R) => [`AR = span² ÷ area`, `  = ${fmt(i.span_m,3)}² ÷ ${fmt(i.area_m2,4)} = ${fmt(R.ar,2)}`] },
+];
+
+function buildCards(){
+  $('#cards').innerHTML = CARDS.map(c => {
+    const dim = RESULT_DIMS[c.key];
+    const unitHtml = dim ? `<select class="unit-sel" data-res-unit="${c.key}" aria-label="Unit for ${esc(typeof c.label === 'string' ? c.label : 'flight time')}">${Object.entries(DIMS[dim].units).map(([k, u]) => `<option value="${k}">${u.l}</option>`).join('')}</select>` : `<span class="unit">${c.unit}</span>`;
+    return `<article class="card result" id="card-${c.key}" aria-labelledby="h-${c.key}">
+      <div class="card-head">${icon(c.icon)}<h3 id="h-${c.key}">${typeof c.label === 'string' ? c.label : ''}</h3><span class="tag tag-${c.tag}">${TAGS[c.tag]}</span></div>
+      <p class="value"><span class="num" data-v>—</span> ${unitHtml}</p>
+      <p class="sub" data-sub></p>
+      <details class="how"><summary>How it was calculated</summary><pre class="formula" data-how></pre><a class="learn-link" href="#${c.learn}">Learn more about this</a></details>
+    </article>`;
+  }).join('');
+}
+
+function renderCards(i, R){
+  const warnKeys = new Set(R.warnings.filter(w => w.lvl === 'warn' && w.key).map(w => w.key));
+  for (const c of CARDS) {
+    const el = $('#card-' + c.key); if (!el) continue;
+    const dim = RESULT_DIMS[c.key];
+    let txt;
+    if (dim) { const u = state.units.results[c.key]; $('[data-res-unit]', el).value = u; txt = fmtS(fromSI(dim, u, c.si(R))); }
+    else txt = fmt(c.val(R), c.dec);
+    $('[data-v]', el).textContent = txt;
+    if (typeof c.label === 'function') $('h3', el).textContent = c.label(i);
+    $('[data-sub]', el).textContent = c.sub(i, R);
+    $('[data-how]', el).textContent = c.how(i, R).join('\n');
+    el.classList.toggle('is-warn', warnKeys.has(c.key) || (c.key === 'wl' && warnKeys.has('wl')) || (c.key === 'C' && warnKeys.has('C')) || (c.key === 'tFull' && warnKeys.has('tFull')));
+  }
+}
+
+function renderWarnings(R){
+  const ul = $('#warnings');
+  const items = R.warnings.length ? R.warnings : [{ lvl:'ok', text:'No warnings. The numbers look consistent for this style.' }];
+  ul.innerHTML = items.map(w => `<li class="${w.lvl}">${icon(w.lvl === 'warn' ? 'warn' : w.lvl === 'ok' ? 'check' : 'info')}<span>${esc(w.text)}${w.learn ? ` <a href="#${w.learn}">Learn why</a>` : ''}</span></li>`).join('');
+}
+
+function renderShortlist(i, R){
+  const sl = R.shortlist, su = state.units.results.ps, sl_ul = unitLabel('speed', su);
+  const rows = [...sl.ranked, ...sl.all.filter(r => !r.ok)];
+  const rank = r => sl.ranked.indexOf(r);
+  $('#shortlist-sub').textContent = sl.mode === 'kv'
+    ? `With your ${fmt(i.kv,0)} KV motor on ${i.cells}S (${fmt(Phys.loadedRPM(i.kv, i.cells, i.rpmFactor),0)} RPM loaded). Props are kept if pitch speed is 1.5–2.0× cruise (${fmtS(fromSI('speed', su, 1.5*R.vc))}–${fmtS(fromSI('speed', su, 2*R.vc))} ${sl_ul}) and absorbed power ≤ ${fmt(R.motorRating,0)} W. They are ranked by closeness to ${fmt(R.P,0)} W.`
+    : `No KV entered, so each prop gets the KV that makes it absorb ${fmt(R.P,0)} W on ${i.cells}S. Props are kept if pitch speed is 1.5–2.0× cruise and the KV is realistic. They are ranked by closeness to 1.75× cruise.`;
+  $('#shortlist-table').innerHTML = `<thead><tr><th scope="col">Rank</th><th scope="col">Prop</th><th scope="col">${sl.mode === 'kv' ? 'RPM' : 'Suggested KV'}</th><th scope="col">Pitch speed (${sl_ul})</th><th scope="col">× cruise</th><th scope="col">Est. power</th><th scope="col">Fit</th></tr></thead><tbody>` +
+    rows.map(r => `<tr class="${R.prop.src === 'suggested' && r.d === R.prop.d && r.p === R.prop.p ? 'hl' : ''}"><td>${r.ok ? rank(r) + 1 : '–'}</td><th scope="row">${r.d}×${r.p}</th><td class="num">${sl.mode === 'kv' ? fmt(r.rpm,0) : fmt(Math.round(r.kv/10)*10,0)}</td><td class="num">${fmtS(fromSI('speed', su, r.ps))}</td><td class="num">${fmt(r.ratio,2)}</td><td class="num">${fmt(r.power,1)} W</td><td>${r.ok ? `<span class="fit ok">${icon('check')}fits</span>` : `<span class="fit no">${icon('x')}${esc(r.reasons.join(', '))}</span>`}</td></tr>`).join('') + '</tbody>';
+  const best = sl.ranked[0] || sl.closest;
+  $('#shortlist-how').textContent = [
+    `Cruise = ${fmt(R.vc,2)} m/s → pitch-speed window ${fmt(1.5*R.vc,2)}–${fmt(2*R.vc,2)} m/s`,
+    sl.mode === 'kv' ? `RPM = ${i.rpmFactor} × ${fmt(i.kv,0)} × (${i.cells} × 3.7) = ${fmt(best.rpm,0)}` : `RPM for target power: RPM = 60 × ∛(P ÷ (Cp·ρ·D⁵)), KV = RPM ÷ (${i.rpmFactor} × ${i.cells} × 3.7)`,
+    `Pitch speed = RPM × pitch × 0.0254 ÷ 60;  P_prop = ${i.cp} × ${fmt(i.rho,3)} × (RPM/60)³ × D⁵`,
+    `Motor limit = 1.5 × ${fmt(R.P,1)} W = ${fmt(R.motorRating,0)} W`,
+    `Top pick ${best.d}×${best.p}: pitch speed ${fmt(best.ps,2)} m/s (${fmt(best.ratio,2)}×), ≈ ${fmt(best.power,1)} W`,
+  ].join('\n');
+  $('#ref-table').innerHTML = `<thead><tr><th scope="col">Reference motor</th><th scope="col">Weight</th><th scope="col">KV</th><th scope="col">Max power</th><th scope="col">Continuous</th><th scope="col">Props</th></tr></thead><tbody>` +
+    REFERENCE_MOTORS.map(m => `<tr class="${R.motorRef === m ? 'hl' : ''}"><th scope="row">${m.name}${R.motorRef === m ? ' <span class="tag tag-physics">match</span>' : ''}</th><td class="num">${fmtS(fromSI('mass', state.units.results.motor, m.mass/1000))} ${unitLabel('mass', state.units.results.motor)}</td><td class="num">${m.kv}</td><td class="num">${m.maxW} W</td><td class="num">${m.contA ? m.contA + ' A' : '–'}</td><td>${m.props}</td></tr>`).join('') + '</tbody>';
+}
+
+function renderDerived(i, R){
+  const mu = state.units.fields.auw, total = budgetTotal(state.budget);
+  $('#budget-total').textContent = `${fmtS(fromSI('mass', state.units.budget, total))} ${unitLabel('mass', state.units.budget)}`;
+  const g = i.auw_kg * 1000, b = $('#badge250');
+  b.className = 'badge ' + (g < 250 ? 'under' : 'over');
+  b.innerHTML = (g < 250 ? icon('check') : icon('warn')) + (g < 250 ? 'Under 250 g' : 'Over 250 g');
+  if (state.weightMode === 'budget' && document.activeElement !== $('#f-auw')) $('#f-auw').value = fmtInput(fromSI('mass', mu, total));
+  const au = state.units.fields.area;
+  $('#wing-readout').innerHTML = `<span class="pill">Area <b>${fmtS(fromSI('area', au, i.area_m2))} ${unitLabel('area', au)}</b></span><span class="pill">Aspect ratio <b>${fmt(R.ar, 1)}</b></span><span class="pill">Wing loading <b>${fmtS(fromSI('wingLoading', state.units.results.wl, R.wl * 0.1))} ${unitLabel('wingLoading', state.units.results.wl)}</b></span>`;
+  $('#rho-readout').innerHTML = `<span class="pill">Air density used <b>${fmt(i.rho, 3)} kg/m³</b></span>`;
+  $('#throttle-out').textContent = `${state.num.throttle}%`;
+  if (state.densityMode === 'alt' && state.isaTemp) { const t = Phys.isaTemperature(state.si.altitude); $('#f-temp').value = fmtInput(fromSI('temperature', state.units.fields.temp, t)); }
+}
+
+/* ---------- input sync ---------- */
+function fillUnitOptions(sel, dim, cur){ sel.innerHTML = Object.entries(DIMS[dim].units).map(([k, u]) => `<option value="${k}">${u.l}</option>`).join(''); sel.value = cur; }
+function syncInputs(force){
+  const act = force ? null : document.activeElement;
+  $$('[data-si]').forEach(el => { if (el === act) return; const k = el.dataset.si; el.value = fmtInput(fromSI(el.dataset.dim, state.units.fields[k], state.si[k])); el.removeAttribute('aria-invalid'); });
+  $$('[data-unit]').forEach(el => { el.value = state.units.fields[el.dataset.unit]; });
+  $$('[data-num]').forEach(el => { if (el === act) return; const v = state.num[el.dataset.num]; el.value = v == null ? '' : fmtInput(v); el.removeAttribute('aria-invalid'); });
+  $$('[data-budget]').forEach(el => { if (el === act) return; el.value = fmtInput(fromSI('mass', state.units.budget, state.budget[el.dataset.budget])); });
+  $('#b-servoN').value = state.budget.servoN;
+  $('#u-budget').value = state.units.budget;
+  $$('input[name=weightMode]').forEach(r => r.checked = r.value === state.weightMode);
+  $$('input[name=wingMode]').forEach(r => r.checked = r.value === state.wingMode);
+  $$('input[name=style]').forEach(r => r.checked = r.value === state.style);
+  $$('input[name=unitSystem]').forEach(r => r.checked = r.value === state.units.system);
+  $('#f-cells').value = String(state.cells); $('#f-controls').value = state.controls; $('#f-flaps').checked = state.flaps;
+  $('#a-density').value = state.densityMode; $('#f-isa').checked = state.isaTemp;
+  const budget = state.weightMode === 'budget';
+  $('#budget-box').hidden = !budget; $('#f-auw').readOnly = budget;
+  $('#auw-hint').textContent = budget ? 'Calculated from the weight budget below.' : 'Everything that flies: airframe, electronics and battery.';
+  $('#chord-field').hidden = state.wingMode !== 'dims'; $('#area-field').hidden = state.wingMode !== 'area';
+  $('#rho-field').hidden = state.densityMode !== 'custom'; $('#alt-fields').hidden = state.densityMode !== 'alt';
+  $('#f-temp').disabled = state.isaTemp;
+  syncDiagInputs(force);
+}
+function parseNum(el){ const s = el.value.trim(); if (s === '') return { empty:true }; const v = Number(s); return { v, ok:isFinite(v) }; }
+const SI_MIN = { auw:1e-4, span:1e-3, chord:1e-3, area:1e-5, cap:1e-3, altitude:-500, temp:-60 };
+
+function onCalcInput(e){
+  const el = e.target;
+  if (el.dataset.si) {
+    const k = el.dataset.si, p = parseNum(el);
+    if (p.empty || !p.ok) { el.setAttribute('aria-invalid', 'true'); return; }
+    const si = toSI(el.dataset.dim, state.units.fields[k], p.v);
+    if (si < SI_MIN[k] || (k === 'temp' && si > 60) || (k === 'altitude' && si > 6000)) { el.setAttribute('aria-invalid', 'true'); return; }
+    el.removeAttribute('aria-invalid'); state.si[k] = si;
+  } else if (el.dataset.unit) {
+    state.units.fields[el.dataset.unit] = el.value;
+    const inp = $(`[data-si="${el.dataset.unit}"]`); inp.value = fmtInput(fromSI(inp.dataset.dim, el.value, state.si[el.dataset.unit]));
+  } else if (el.dataset.num) {
+    const k = el.dataset.num, p = parseNum(el);
+    if (p.empty) { if ('optional' in el.dataset) { state.num[k] = null; el.removeAttribute('aria-invalid'); } else { el.setAttribute('aria-invalid', 'true'); return; } }
+    else if (!p.ok || p.v <= 0 || (k === 'usable' && p.v > 1) || (k === 'throttle' && p.v > 100)) { el.setAttribute('aria-invalid', 'true'); return; }
+    else { el.removeAttribute('aria-invalid'); state.num[k] = p.v; }
+  } else if (el.dataset.budget) {
+    const p = parseNum(el); if (p.empty || !p.ok || p.v < 0) { el.setAttribute('aria-invalid', 'true'); return; }
+    el.removeAttribute('aria-invalid'); state.budget[el.dataset.budget] = toSI('mass', state.units.budget, p.v);
+  } else if ('budgetN' in el.dataset) {
+    const p = parseNum(el); if (p.empty || !p.ok || p.v < 0 || p.v > 20) { el.setAttribute('aria-invalid', 'true'); return; }
+    el.removeAttribute('aria-invalid'); state.budget.servoN = Math.round(p.v);
+  } else if (el.id === 'u-budget') { state.units.budget = el.value; syncInputs(); }
+  else if (el.name === 'weightMode') {
+    if (el.value === 'budget' && state.weightMode === 'auw') { /* keep budget as entered */ }
+    if (el.value === 'auw' && state.weightMode === 'budget') state.si.auw = budgetTotal(state.budget);
+    state.weightMode = el.value; syncInputs();
+  }
+  else if (el.name === 'wingMode') {
+    if (el.value === 'area') state.si.area = state.si.span * state.si.chord; else state.si.chord = state.si.area / state.si.span;
+    state.wingMode = el.value; syncInputs();
+  }
+  else if (el.name === 'style') state.style = el.value;
+  else if (el.id === 'f-cells') state.cells = +el.value;
+  else if (el.id === 'f-controls') state.controls = el.value;
+  else if (el.id === 'f-flaps') state.flaps = el.checked;
+  else if (el.id === 'a-density') { state.densityMode = el.value; syncInputs(); }
+  else if (el.id === 'f-isa') { state.isaTemp = el.checked; if (!el.checked) state.si.temp = Phys.isaTemperature(state.si.altitude); syncInputs(); }
+  else return;
+  update();
+}
+
+/* ---------- diagram ---------- */
+const DIAG_LEN = ['span','rootChord','tipChord','fuseLen','tailArm','hSpan','hChord','vHeight','vChord'];
+function syncDiagInputs(force){
+  const act = force ? null : document.activeElement, d = state.diagram, u = state.units.diagram;
+  $$('[data-diag]').forEach(el => { if (el === act) return; el.value = String(+fromSI('length', u, d[el.dataset.diag]).toPrecision(4)); el.removeAttribute('aria-invalid'); });
+  $$('[data-diag-num]').forEach(el => { if (el === act) return; el.value = String(+(+d[el.dataset.diagNum]).toPrecision(4)); el.removeAttribute('aria-invalid'); });
+  $('#d-preset').value = d.preset; $('#d-motor').value = d.motorPos; $('#d-mount').value = d.wingMount;
+  $('#d-unit').value = u; $('#d-link').checked = state.diagLink;
+  $('#d-span').readOnly = state.diagLink; $('#d-rootChord').readOnly = state.diagLink;
+  $('#d-tailArm').disabled = !(d.hSpan > 0 && d.hChord > 0);
+}
+function applyLink(inp){
+  const d = state.diagram; d.span = inp.span_m;
+  const S = inp.area_m2; let root = 2 * S / d.span - d.tipChord;
+  if (!(root > 0) || root < d.tipChord) { d.tipChord = S / d.span; root = d.tipChord; }
+  d.rootChord = root;
+}
+function diagramColors(){
+  const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
+  return { paper:v('--d-paper'), grid:v('--d-grid'), gridMajor:v('--d-grid-major'), ink:v('--d-ink'), fill:v('--d-fill'), accent:v('--d-accent'), cg:v('--d-cg'), band:v('--d-band'), dim:v('--d-dim') };
+}
+let lastSVG = '';
+function updateDiagram(){
+  const d = state.diagram, propD_m = lastR ? lastR.prop.d * 0.0254 : 0.2;
+  const surf = (CONTROLS[state.controls] || CONTROLS.re).surf;
+  lastSVG = buildAirframeSVG(d, { propD_m, colors:diagramColors(), unit:state.units.diagram, surf, flaps:state.flaps });
+  const holder = $('#diagram-holder'); holder.innerHTML = lastSVG;
+  const svg = holder.querySelector('svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('class', 'diagram-svg');
+  const g = airframeGeometry(d, propD_m);
+  const chip = (cls, label, val, note) => `<span class="chip ${cls}"><span class="dot" aria-hidden="true"></span><b>${label}</b> ${val} <small>${note}</small><span class="sr-only"> status: ${cls === 'ok' ? 'good' : cls === 'warn' ? 'borderline' : cls === 'bad' ? 'out of range' : 'not applicable'}</span></span>`;
+  const band = (v, lo, hi, wlo, whi) => v >= lo && v <= hi ? 'ok' : v >= wlo && v <= whi ? 'warn' : 'bad';
+  const chips = [];
+  chips.push(g.tailless ? chip('na', 'V<sub>h</sub>', 'n/a', 'tailless: relies on sweep/reflex') : chip(band(g.Vh, .35, .6, .25, .75), 'V<sub>h</sub>', fmt(g.Vh, 2), 'typical 0.35–0.6'));
+  chips.push(chip(band(g.Vv, .02, .05, .015, .07), 'V<sub>v</sub>', fmt(g.Vv, 3), 'typical 0.02–0.05'));
+  chips.push(chip(band(g.AR, 5, 12, 3, 16), 'Aspect ratio', fmt(g.AR, 1), 'typical 5–12'));
+  chips.push(chip(band(d.cg, 25, 33, 20, 38), 'CG', fmt(d.cg, 0) + '% MAC', g.tailless ? 'recommended 25–33% (tailless often 15–25%; follow the plan)' : 'recommended 25–33%'));
+  $('#chips').innerHTML = chips.join('');
+  const u = state.units.diagram, L = m => `${fmtS(fromSI('length', u, m))} ${unitLabel('length', u)}`;
+  $('#diag-readout').innerHTML = `<span class="pill">Wing area <b>${fmtS(g.S * 100)} dm²</b></span><span class="pill">MAC <b>${L(g.mac)}</b></span><span class="pill">H-tail <b>${g.tailless ? '–' : fmt(g.Sh / g.S * 100, 0) + '%'}</b> of wing</span><span class="pill">V-tail <b>${fmt(g.Sv / g.S * 100, 0)}%</b> of wing</span><span class="pill">CG from root LE <b>${L(g.xcg - g.xwLE)}</b></span>`;
+}
+function onDiagInput(e){
+  const el = e.target, d = state.diagram;
+  if (el.dataset.diag) {
+    const p = parseNum(el), k = el.dataset.diag;
+    if (p.empty || !p.ok || p.v < 0 || (p.v === 0 && !['hSpan','hChord','tailArm'].includes(k))) { el.setAttribute('aria-invalid', 'true'); return; }
+    el.removeAttribute('aria-invalid'); d[k] = toSI('length', state.units.diagram, p.v);
+  } else if (el.dataset.diagNum) {
+    const p = parseNum(el), k = el.dataset.diagNum, lim = { sweep:[-10,45], dihedral:[-10,20], cg:[0,100] }[k];
+    if (p.empty || !p.ok || p.v < lim[0] || p.v > lim[1]) { el.setAttribute('aria-invalid', 'true'); return; }
+    el.removeAttribute('aria-invalid'); d[k] = p.v;
+  } else if (el.id === 'd-preset') { autoProp(el.value); return; }
+  else if (el.id === 'd-motor') d.motorPos = el.value;
+  else if (el.id === 'd-mount') d.wingMount = el.value;
+  else if (el.id === 'd-unit') { state.units.diagram = el.value; syncDiagInputs(true); }
+  else if (el.id === 'd-link') { state.diagLink = el.checked; if (state.diagLink && lastInp) applyLink(lastInp); syncDiagInputs(); }
+  else return;
+  if (state.diagLink && lastInp) applyLink(lastInp);
+  syncDiagInputs(); updateDiagram(); scheduleSave();
+}
+function autoProp(preset){
+  const area = state.diagLink && lastInp ? lastInp.area_m2 : null, span = state.diagLink && lastInp ? lastInp.span_m : state.diagram.span;
+  state.diagram = autoProportion(preset || state.diagram.preset, span, state.style, area);
+  if (state.diagLink && lastInp) applyLink(lastInp);
+  syncDiagInputs(true); updateDiagram(); scheduleSave();
+}
+
+/* ---------- downloads ---------- */
+function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+function downloadSVG(){ download(new Blob([lastSVG], { type:'image/svg+xml' }), 'rc-airframe.svg'); toast('SVG downloaded'); }
+function downloadPNG(){
+  const img = new Image(), m = lastSVG.match(/viewBox="0 0 (\d+) (\d+)"/), w = +m[1], h = +m[2], k = 2;
+  img.onload = () => {
+    try {
+      const c = document.createElement('canvas'); c.width = w * k; c.height = h * k;
+      const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => { if (b) { download(b, 'rc-airframe.png'); toast('PNG downloaded'); } else toast('PNG export failed in this browser. Try Download SVG.'); }, 'image/png');
+    } catch (e) { toast('PNG export is blocked in this browser. Try Download SVG.'); }
+  };
+  img.onerror = () => toast('PNG export failed. Try Download SVG.');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(lastSVG);
+}
+
+/* ---------- misc UI ---------- */
+let toastTimer = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600); }
+let announceTimer = null;
+function scheduleAnnounce(i, R){
+  clearTimeout(announceTimer);
+  announceTimer = setTimeout(() => {
+    const nw = R.warnings.filter(w => w.lvl === 'warn').length, su = state.units.results.vs;
+    $('#summary').textContent = `${fmtS(i.auw_kg*1000)} g ${R.style.label.toLowerCase()}: wing loading ${fmt(R.wl,1)} g/dm², stall ${fmtS(fromSI('speed', su, R.vs))} ${unitLabel('speed', su)}, target power ${fmt(R.P,1)} W, ${fmt(R.I,2)} A on ${i.cells}S, about ${fmt(R.tFull,1)} min at full throttle. ${nw ? nw + (nw === 1 ? ' warning.' : ' warnings.') : 'No warnings.'}`;
+  }, 400);
+}
+function applySystem(sys){ RC.setUnitSystem(sys); state.units = Object.assign(systemUnits(sys)); syncInputs(true); update(); }
+function effectiveDark(){ const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; }
+function syncThemeButton(){ const dark = effectiveDark(), b = $('#theme-toggle'); b.setAttribute('aria-pressed', String(dark)); b.setAttribute('aria-label', dark ? 'Use light theme' : 'Use dark theme'); b.title = b.getAttribute('aria-label'); $('use', b).setAttribute('href', dark ? '#i-sun' : '#i-moon'); }
+function toggleTheme(){ const next = effectiveDark() ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', next); try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* ignore */ } syncThemeButton(); updateDiagram(); }
+
+const EXAMPLES = {
+  worked:     { weightMode:'auw', wingMode:'area', style:'trainer', cells:2, controls:'re', flaps:false, si:{ auw:0.2, span:1.0, area:0.1, chord:0.1, cap:0.85 }, num:{ kv:1400, propD:8, propP:3.8, cRating:null, throttle:50 } },
+  budget:     { weightMode:'budget', wingMode:'dims', style:'trainer', cells:2, controls:'re', si:{ span:1.0, chord:0.1, cap:0.85 }, num:{ kv:1400, propD:8, propP:3.8, cRating:null },
+                budget:{ airframe:0.08, motor:0.018, esc:0.010, servo:0.009, servoN:2, rx:0.006, battery:0.050, prop:0.006, misc:0.012 } },
+  sport600:   { weightMode:'auw', wingMode:'dims', style:'sport', cells:3, controls:'aer1', si:{ auw:0.6, span:1.0, chord:0.18, cap:1.3 }, num:{ kv:1100, propD:9, propP:4.7, cRating:25 } },
+  aero800:    { weightMode:'auw', wingMode:'dims', style:'aerobatic', cells:3, controls:'aer2', si:{ auw:0.8, span:1.0, chord:0.24, cap:1.5 }, num:{ kv:null, propD:null, propP:null, cRating:null } },
+  crating:    { weightMode:'auw', wingMode:'area', style:'trainer', cells:2, controls:'re', si:{ auw:0.2, span:1.0, area:0.1, cap:0.45 }, num:{ kv:1400, propD:8, propP:3.8, cRating:10 } },
+  flighttime: { weightMode:'auw', wingMode:'area', style:'trainer', cells:2, controls:'re', si:{ auw:0.2, span:1.0, area:0.1, cap:1.0 }, num:{ kv:1400, propD:8, propP:3.8, cRating:null, throttle:50 } },
+  bigprop:    { weightMode:'auw', wingMode:'area', style:'trainer', cells:2, controls:'re', si:{ auw:0.2, span:1.0, area:0.1, cap:0.85 }, num:{ kv:1400, propD:9, propP:4.7, cRating:null } },
+  receiver:   { weightMode:'auw', wingMode:'dims', style:'sport', cells:3, controls:'aer2', flaps:true, si:{ auw:0.6, span:1.0, chord:0.18, cap:1.3 }, num:{ kv:1100, propD:9, propP:4.7, cRating:25 } },
+  chuck:      { weightMode:'auw', wingMode:'dims', style:'glider', cells:1, controls:'re', flaps:false, si:{ auw:0.065, span:0.48, chord:0.08, cap:0.3 }, num:{ kv:null, propD:null, propP:null, cRating:null } },
+};
+function loadExample(name, diagramPreset){
+  const fresh = defaultState(), ex = EXAMPLES[name] || EXAMPLES.worked;
+  const keepUnits = { units: systemUnits('metric') };
+  state = sanitizeUnits(mergeState(fresh, JSON.parse(JSON.stringify(Object.assign({}, ex, keepUnits)))));
+  for (const k of ['kv', 'propD', 'propP', 'cRating']) if (ex.num && k in ex.num) state.num[k] = ex.num[k];
+  const inp = gatherInputs();
+  state.diagLink = true;
+  state.diagram = autoProportion(diagramPreset || (name === 'chuck' ? 'chuck' : 'trainer'), inp.span_m, state.style, inp.area_m2);
+  if (name === 'chuck') state.diagram.motorPos = 'pusher';
+  syncInputs(true); update();
+  if (diagramPreset) { document.getElementById('diagram').scrollIntoView(); $('#diag-title').setAttribute('tabindex', '-1'); $('#diag-title').focus({ preventScroll:true }); }
+  else { document.getElementById('results-title').scrollIntoView(); $('#results-title').focus({ preventScroll:true }); }
+  toast('Example loaded');
+}
+
+function update(){
+  const inp = gatherInputs(), R = computeAll(inp);
+  lastInp = inp; lastR = R;
+  renderDerived(inp, R); renderCards(inp, R); renderWarnings(R); renderShortlist(inp, R);
+  if (state.diagLink) { applyLink(inp); syncDiagInputs(); }
+  updateDiagram(); scheduleSave(); scheduleAnnounce(inp, R);
+}
+
+/* ---------- converter ---------- */
+function initConverter(){
+  const dimSel = $('#cv-dim'), from = $('#cv-from'), to = $('#cv-to'), val = $('#cv-val'), out = $('#cv-out');
+  dimSel.innerHTML = Object.entries(DIMS).map(([k, d]) => `<option value="${k}">${d.label}</option>`).join('');
+  const setDim = () => { const d = DIMS[dimSel.value], keys = Object.keys(d.units); fillUnitOptions(from, dimSel.value, keys[0]); fillUnitOptions(to, dimSel.value, keys[1] || keys[0]); calc(); };
+  const calc = () => { const v = Number(val.value); if (val.value.trim() === '' || !isFinite(v)) { out.textContent = 'Enter a number'; return; } const r = fromSI(dimSel.value, to.value, toSI(dimSel.value, from.value, v)); out.textContent = `${fmtInput(v)} ${unitLabel(dimSel.value, from.value)} = ${String(+r.toPrecision(6))} ${unitLabel(dimSel.value, to.value)}`; };
+  dimSel.addEventListener('change', setDim); [val, from, to].forEach(e => e.addEventListener('input', calc));
+  $('#cv-swap').addEventListener('click', () => { const a = from.value; from.value = to.value; to.value = a; calc(); });
+  setDim();
+}
+
+/* ---------- self-test ---------- */
+function runSelfTest(){
+  let pass = 0, total = 0;
+  const t = (cond, msg) => { total++; if (cond) pass++; console.assert(cond, '[self-test] ' + msg); };
+  const near = (a, b, tol) => Math.abs(a - b) <= tol;
+  const R = computeAll({ auw_kg:0.2, area_m2:0.1, span_m:1, style:'trainer', wPerKg:null, cells:2, cap_Ah:0.85, cRating:null, kv:1400, propD:8, propP:3.8,
+    clmax:1, rho:1.225, vCell:3.5, rpmFactor:0.8, cp:0.04, fm:0.5, usable:0.8, cruiseFactor:1.4, throttle:1, controls:'re', flaps:false });
+  t(near(R.wl, 20, 1e-9), 'wing loading = 20 g/dm²');
+  t(near(R.vs, 5.66, 0.05), 'stall ≈ 5.7 m/s (got ' + R.vs + ')');
+  t(near(R.vc, 7.92, 0.1), 'cruise ≈ 8 m/s');
+  t(near(R.P, 30, 1e-9), 'power = 30 W');
+  t(near(R.V, 7.0, 1e-9), 'loaded voltage = 7.0 V');
+  t(near(R.I, 4.29, 0.01), 'current ≈ 4.29 A');
+  t(near(R.reqC, 5.04, 0.02), 'required C ≈ 5.0');
+  t(R.recC === 8, 'recommended C = 8');
+  t(near(R.tFull, 9.52, 0.05), 'flight time ≈ 9.5 min');
+  t(near(R.rpm, 8288, 0.5), 'loaded RPM = 8288');
+  t(near(R.pitchSpeed, 13.33, 0.02), 'pitch speed ≈ 13.3 m/s');
+  t(R.shortlist.ranked.length > 0 && R.shortlist.ranked.every(r => r.ratio >= 1.5 && r.ratio <= 2), 'shortlist respects pitch window');
+  t(R.escRec >= R.I * 1.5, 'ESC ≥ 1.5 × current');
+  for (const [dim, d] of Object.entries(DIMS)) for (const u of Object.keys(d.units)) { const v = 123.456; t(near(fromSI(dim, u, toSI(dim, u, v)), v, 1e-9), `round-trip ${dim} ${u}`); }
+  t(near(fromSI('mass', 'g', toSI('mass', 'oz', 1)), 28.3495, 1e-6), '1 oz = 28.3495 g');
+  t(near(fromSI('mass', 'g', toSI('mass', 'lb', 1)), 453.592, 1e-6), '1 lb = 453.592 g');
+  t(near(fromSI('length', 'mm', toSI('length', 'in', 1)), 25.4, 1e-9), '1 in = 25.4 mm');
+  t(near(fromSI('area', 'dm2', toSI('area', 'ft2', 1)), 9.2903, 1e-9), '1 ft² = 9.2903 dm²');
+  t(near(fromSI('wingLoading', 'g/dm2', toSI('wingLoading', 'oz/ft2', 1)), 3.0515, 1e-9), '1 oz/ft² = 3.0515 g/dm²');
+  t(near(fromSI('speed', 'm/s', toSI('speed', 'mph', 1)), 0.44704, 1e-9), '1 mph = 0.44704 m/s');
+  t(near(fromSI('speed', 'm/s', toSI('speed', 'knots', 1)), 0.514444, 1e-9), '1 knot = 0.514444 m/s');
+  t(near(fromSI('force', 'gf', toSI('force', 'N', 1)), 101.972, 1e-9), '1 N = 101.972 gf');
+  t(near(fromSI('force', 'gf', toSI('force', 'lbf', 1)), 453.592, 1e-9), '1 lbf = 453.592 gf');
+  t(near(fromSI('force', 'gf', toSI('force', 'ozf', 1)), 28.3495, 1e-9), '1 ozf = 28.3495 gf');
+  t(near(Phys.densityFromAltitude(0), 1.225, 1e-9) && near(Phys.densityFromAltTemp(0, 15), 1.225, 0.001), 'density at sea level');
+  t(near(Phys.tailVolumeH(0.022, 0.227, 0.1, 0.1), 0.4994, 1e-4), 'tail volume V_h');
+  const ap = airframeGeometry(autoProportion('trainer', 1, 'trainer', 0.1), 0.2);
+  t(near(ap.Vh, 0.5, 1e-6) && ap.Vv > 0.02 && ap.Vv < 0.05, 'auto-proportion gives V_h 0.5 and V_v in range');
+  console.info(`[self-test] ${pass}/${total} checks passed`);
+  return { pass, total };
+}
+
+/* ---------- init ---------- */
+function init(){
+  RC.injectSprite();
+  $('#f-controls').innerHTML = Object.entries(CONTROLS).map(([k, c]) => `<option value="${k}">${c.label}</option>`).join('');
+  $$('[data-unit]').forEach(el => fillUnitOptions(el, el.dataset.dim, state.units.fields[el.dataset.unit]));
+  fillUnitOptions($('#u-budget'), 'mass', state.units.budget);
+  fillUnitOptions($('#d-unit'), 'length', state.units.diagram);
+  buildCards(); initConverter();
+  const form = $('#calc-form');
+  form.addEventListener('input', onCalcInput);
+  form.addEventListener('change', e => { if (e.target.matches('select, input[type=radio], input[type=checkbox]')) return; onCalcInput(e); });
+  form.addEventListener('focusout', e => { if (e.target.matches('[data-si],[data-num],[data-budget]') && e.target.getAttribute('aria-invalid') !== 'true') syncInputs(true); });
+  $('#cards').addEventListener('change', e => { const k = e.target.dataset.resUnit; if (k) { state.units.results[k] = e.target.value; update(); } });
+  $$('input[name=unitSystem]').forEach(r => r.addEventListener('change', () => applySystem(r.value)));
+  const df = $('#diag-form'); df.addEventListener('input', onDiagInput);
+  df.addEventListener('focusout', e => { if (e.target.matches('[data-diag],[data-diag-num]') && e.target.getAttribute('aria-invalid') !== 'true') syncDiagInputs(true); });
+  $('#d-auto').addEventListener('click', () => { autoProp(); toast('Auto-proportioned from span and style'); });
+  $('#d-svg').addEventListener('click', downloadSVG);
+  $('#d-png').addEventListener('click', downloadPNG);
+  $('#d-print').addEventListener('click', () => window.print());
+  $('#btn-print').addEventListener('click', () => window.print());
+  $('#btn-example').addEventListener('click', () => loadExample('worked'));
+  $('#btn-reset').addEventListener('click', () => { state = defaultState(); syncInputs(true); update(); toast('Reset to defaults'); });
+  $('#btn-share').addEventListener('click', async () => {
+    const url = location.href.split('#')[0] + '#cfg=' + b64urlEncode(JSON.stringify(state));
+    try { history.replaceState(null, '', url); } catch (e) { /* file:// may refuse */ }
+    const f = $('#share-field'), inp = $('#share-url'); f.hidden = false; inp.value = url; inp.select();
+    try { await navigator.clipboard.writeText(url); toast('Share link copied to clipboard'); } catch (e) { toast('Copy the link from the field below'); }
+  });
+  $('#theme-toggle').addEventListener('click', toggleTheme);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { syncThemeButton(); updateDiagram(); });
+  document.addEventListener('click', e => {
+    const ex = e.target.closest('[data-example]');
+    if (ex) { loadExample(ex.dataset.example, ex.dataset.diagram); return; }
+    const a = e.target.closest('a[href^="#learn-"], a[href="#glossary"]');
+    if (a) { const t = document.getElementById(a.getAttribute('href').slice(1)); if (t && t.tagName === 'DETAILS') t.open = true; }
+  });
+  const openFromHash = () => { const id = location.hash.slice(1); if (/^(learn-|glossary)/.test(id)) { const t = document.getElementById(id); if (t) t.open = true; } };
+  window.addEventListener('hashchange', openFromHash); openFromHash();
+  // nav highlight
+  const links = $$('.nav a[data-nav]'), secs = links.map(a => document.getElementById(a.dataset.nav));
+  const onScroll = () => { let cur = secs[0]; for (const s of secs) if (s.getBoundingClientRect().top < 140) cur = s; links.forEach(a => { const on = a.dataset.nav === cur.id; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); }); };
+  window.addEventListener('scroll', onScroll, { passive:true }); onScroll();
+  syncThemeButton(); syncInputs(true); update();
+  runSelfTest();
+}
+init();
+window.RCCalc = { DIMS, toSI, fromSI, Phys, computeAll, propShortlist, airframeGeometry, autoProportion, buildAirframeSVG, runSelfTest, get state(){ return state; } };
+</script>
+</body>
+</html>

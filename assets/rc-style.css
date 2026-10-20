@@ -509,3 +509,38 @@ details.tableview>summary{cursor:pointer;font-size:.8rem;font-weight:700;color:v
 .stat.is-text .val{font-size:1.02rem;line-height:1.3}
 .g-gletter{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
 .g-gletter h3{grid-column:1/-1}
+
+/* ---------- simulator: on-screen remote (phones, tablets, mouse) ---------- */
+.remote{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;pointer-events:none;
+  padding:10px max(14px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));z-index:5}
+.gimbal{pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative;container-type:size;
+  width:clamp(120px,min(36vh,30vw),220px);aspect-ratio:1;border-radius:22px;background:rgba(6,16,30,.42);border:1.5px solid rgba(255,255,255,.32);
+  box-shadow:inset 0 0 0 6px rgba(255,255,255,.04),0 6px 18px rgba(0,0,0,.25);backdrop-filter:blur(3px)}
+.gimbal.active{border-color:rgba(76,201,240,.85)}
+.gimbal .gb-x,.gimbal .gb-y{position:absolute;background:rgba(255,255,255,.22)}
+.gimbal .gb-x{left:12%;right:12%;top:50%;height:1px}.gimbal .gb-y{top:12%;bottom:12%;left:50%;width:1px}
+.gimbal .knob{position:absolute;left:50%;top:50%;width:30%;height:30%;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 35% 30%,#9be7fb,#22a6c9 60%,#0e6f88);box-shadow:0 3px 10px rgba(0,0,0,.45),inset 0 -2px 4px rgba(0,0,0,.25)}
+.gimbal .gb-lab{position:absolute;left:0;right:0;bottom:-18px;text-align:center;font-size:.62rem;font-weight:700;color:rgba(255,255,255,.85);text-shadow:0 1px 2px rgba(0,0,0,.7);letter-spacing:.02em}
+.gimbal .gb-thr{position:absolute;top:12%;bottom:12%;width:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden;left:6px}
+#gb-right .gb-thr{left:auto;right:6px}
+.gimbal .gb-thr i{position:absolute;left:0;right:0;bottom:0;background:#ffb020}
+.remote-mid{pointer-events:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px}
+.remote-mid .sw{font:inherit;font-size:.72rem;font-weight:800;color:#fff;background:rgba(6,16,30,.62);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:9px 10px;min-width:72px;touch-action:manipulation}
+.remote-mid .sw:active,.remote-mid .sw.on{background:rgba(8,145,178,.9)}
+body.remote-on .hud-bl{display:none}
+body.remote-on .hud-br{bottom:auto;top:56px}
+body.remote-on .hud-lesson{bottom:auto;top:96px}
+.rotate-hint{position:absolute;inset:0;display:grid;place-items:center;padding:24px;background:rgba(6,16,30,.78);color:#fff;text-align:center;z-index:8}
+.rotate-hint b{font-size:1.15rem}.rotate-hint p{margin:8px 0 14px;opacity:.9}
+/* compact (phones): no page header, smaller HUD, full-height flight view */
+body.sim-compact .topbar{display:none}
+body.sim-compact .hud-tl{font-size:.68rem;min-width:140px;padding:6px 8px;left:max(8px,env(safe-area-inset-left));top:8px}
+body.sim-compact .hud-tl .hrow b{font-size:.84rem}
+body.sim-compact .hud-tr{top:8px;right:max(8px,env(safe-area-inset-right))}
+body.sim-compact .hud-btn{font-size:.7rem;padding:5px 8px}
+body.sim-compact .hud-tc{font-size:.8rem;top:44px}
+@media (orientation:portrait){body.remote-on .remote{padding-bottom:max(18px,env(safe-area-inset-bottom))}body.remote-on .remote-mid{grid-template-columns:1fr}}
+body.sim-compact .sim-shell{grid-template-columns:1fr;grid-template-rows:1fr auto}
+body.sim-compact .sim-shell.panel-hidden{grid-template-columns:1fr;grid-template-rows:1fr}
+@media (orientation:landscape){body.sim-compact .sim-shell{grid-template-columns:1fr min(340px,45vw);grid-template-rows:1fr}body.sim-compact .sim-panel{max-height:none}body.sim-compact .sim-shell.panel-hidden{grid-template-columns:1fr}}

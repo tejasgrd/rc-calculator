@@ -122,6 +122,16 @@ await ev(`RCSim.stopLesson(); history.replaceState(null, '', location.pathname)`
 await ev(`document.querySelector('#theme-toggle').click()`); await sleep(500); await shot('sim-dark');
 await send('Emulation.setDeviceMetricsOverride', { width:390, height:844, deviceScaleFactor:1, mobile:true }); await sleep(1200); await shot('sim-phone');
 R.phone = await ev(`[document.documentElement.scrollWidth, innerWidth]`);
+// phone as a remote: touch device in landscape, two on-screen gimbals (Mode 2)
+await send('Emulation.setDeviceMetricsOverride', { width:844, height:390, deviceScaleFactor:1, mobile:true }); await send('Emulation.setTouchEmulationEnabled', { enabled:true, maxTouchPoints:5 });
+await ev(`localStorage.removeItem('rcSim.settings.v1')`); await send('Page.reload'); await sleep(5000);
+{ const L = await ev(`(() => { const r = document.querySelector('#gb-left').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`), tp = (x, y) => [{ x, y, id:1, radiusX:5, radiusY:5, force:1 }];
+  await send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:tp(L[0], L[1]) });
+  for (let k = 1; k <= 6; k++) { await send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:tp(L[0] + k * 4, L[1] - k * 12) }); await sleep(40); }
+  const during = await ev(`({ rud:+RCSim.input.virtual.rud.toFixed(2), thr:+RCSim.input.virtual.thr.toFixed(2) })`);
+  await send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] }); await sleep(300);
+  R.remote = await ev(`({ on:!document.querySelector('#remote').hidden, compact:document.body.classList.contains('sim-compact'), viewFull:document.querySelector('#sim-canvas').clientHeight === innerHeight, labels:[...document.querySelectorAll('.gb-lab')].map(l => l.textContent), after:{ rud:RCSim.input.virtual.rud, thr:+RCSim.input.virtual.thr.toFixed(2) } })`); R.remote.during = during; }
+await shot('sim-remote-landscape');
 R.errors = { exceptions:events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => (e.params.exceptionDetails.exception?.description || e.params.exceptionDetails.text) + ' @ ' + (e.params.exceptionDetails.stackTrace?.callFrames || []).slice(0, 4).map(c => `${c.functionName}:${c.url.split('/').pop()}:${c.lineNumber + 1}`).join(' < ')),
   consoleErrors:events.filter(e => e.method === 'Runtime.consoleAPICalled' && ['error', 'assert'].includes(e.params.type)).map(e => e.params.args.map(a => a.value ?? a.description).join(' ')),
   logErrors:events.filter(e => e.method === 'Log.entryAdded' && e.params.entry.level === 'error').map(e => e.params.entry.text),

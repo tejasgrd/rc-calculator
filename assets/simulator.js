@@ -79,8 +79,9 @@ function reset(){
   sim.ctrl.thr = m === 'hand' ? Math.max(0.6, input.state.thr || 0) : 0;
   sim.reset(m, Object.assign({ heading, alt:40 }, lesson && lesson.startOpts ? lesson.startOpts : {}));
   if (m === 'runway') { const h = heading * Math.PI / 180; sim.s.p[0] = -30 * Math.cos(h); sim.s.p[1] = -30 * Math.sin(h); }
-  if (m === 'hand') input.state.thr = sim.ctrl.thr;
-  if (m === 'runway') input.state.thr = 0;
+  if (m === 'hand') setThrottleInput(sim.ctrl.thr);
+  if (m === 'runway') setThrottleInput(0);
+  if (input.virtual.on && typeof drawGimbal === 'function') { drawGimbal('left'); drawGimbal('right'); }
   world.clearTrail(); recorder.segment(); sim.events = []; prevStalled = false; sim.failures = {};
   instructor = new SimLessons.Instructor(sim, { mode:settings.instructor });
   if (lesson && lesson.onReset) lesson.onReset();
@@ -232,7 +233,7 @@ async function startLesson(id, demo){
   env.set(Object.assign({}, su.weather, { tempC:W.tempC, elevation:W.elevation, qnh:W.qnh })); env.dirOff = 0;
   lesson = { def, L, su, demo:!!demo, start:su.start, startOpts:su.startOpts, assist:su.assist, show:su.show, reported:false };
   lesson.onReset = () => { lesson.L = new SimLessons.Lesson(def, { vs:model.trim.vs, runwayHeading:runwayHeading() }); lesson.reported = false; sim.failures = {}; lesson.pilot = lesson.demo ? new SimLessons.DemoPilot(sim, lesson.L) : null;
-    instructor = new SimLessons.Instructor(sim, { mode:settings.instructor }); if (def.motorOff) { sim.ctrl.thr = 0; input.state.thr = 0; }
+    instructor = new SimLessons.Instructor(sim, { mode:settings.instructor }); if (def.motorOff) { sim.ctrl.thr = 0; setThrottleInput(0); }
     world.setGates((lesson.L.gates || []).map(g => ({ p:g.p, heading:g.heading, r:g.r }))); lesson.L.gates.forEach((_, i) => world.markGate(i, i === 0 ? 'next' : 'todo')); world.setPath(settings.ghost ? lesson.L.path() : []); };
   lesson.check = (tl, dt, c, who) => checkLesson(tl, dt, c, who);
   if (su.show) world.showThermals(env.thermalList, true);
@@ -439,18 +440,57 @@ $('#c-dual').addEventListener('input', e => { tun.dual = e.target.checked; input
 $('#c-tune').innerHTML = ['ail', 'ele', 'rud'].map(a => `<div class="field" style="margin:0"><label for="ce-${a}">${{ ail:'Aileron', ele:'Elevator', rud:'Rudder' }[a]} expo <output id="ce-${a}-o">${tun.expo[a]}</output></label><input id="ce-${a}" type="range" min="0" max="0.8" step="0.05" value="${tun.expo[a]}" data-expo="${a}">
   <label for="cr-${a}">rate <output id="cr-${a}-o">${tun.rate[a]}</output></label><input id="cr-${a}" type="range" min="0.3" max="1" step="0.05" value="${tun.rate[a]}" data-rate="${a}"></div>`).join('');
 $('#c-tune').addEventListener('input', e => { const a = e.target.dataset.expo || e.target.dataset.rate; if (!a) return; (e.target.dataset.expo ? tun.expo : tun.rate)[a] = +e.target.value; $(`#${e.target.id}-o`).textContent = e.target.value; input.save(); });
-// on-screen sticks
-$('#c-touch').addEventListener('input', e => { input.virtual.on = e.target.checked; $('#vs-left').hidden = $('#vs-right').hidden = !e.target.checked; });
-function bindStick(el, onMove, spring){
-  const knob = el.firstElementChild; let id = null;
-  const set = (x, y) => { knob.style.left = `${50 + x * 40}%`; knob.style.top = `${50 + y * 40}%`; onMove(x, y); };
-  const at = e => { const r = el.getBoundingClientRect(); return [Math.max(-1, Math.min(1, (e.clientX - r.left) / r.width * 2 - 1)), Math.max(-1, Math.min(1, (e.clientY - r.top) / r.height * 2 - 1))]; };
-  el.addEventListener('pointerdown', e => { id = e.pointerId; el.setPointerCapture(id); set(...at(e)); });
-  el.addEventListener('pointermove', e => { if (e.pointerId === id) set(...at(e)); });
-  el.addEventListener('pointerup', () => { id = null; spring(set); });
+// on-screen remote: two gimbals like a transmitter (Mode 2: left = throttle/rudder, right = elevator/aileron)
+const TOUCH = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints || 0) > 0;
+if (settings.touch == null) settings.touch = TOUCH;
+function setThrottleInput(v){ input.state.thr = v; if (input.virtual.on) input.virtual.thr = v; }
+function stickRoles(){ return (input.saved.prefs.mode || 2) === 1 ? { left:['rud', 'ele'], right:['ail', 'thr'] } : { left:['rud', 'thr'], right:['ail', 'ele'] }; }
+const LAB = { rud:'rudder', thr:'throttle', ail:'aileron', ele:'elevator' };
+function drawGimbal(side){
+  const el = $(`#gb-${side}`), [ax, ay] = stickRoles()[side], v = input.virtual, kx = v[ax] || 0, ky = ay === 'thr' ? 1 - 2 * (v.thr || 0) : (v[ay] || 0);
+  const w = el.clientWidth || 160; el.querySelector('.knob').style.transform = `translate(calc(-50% + ${(kx * 0.38 * w).toFixed(1)}px), calc(-50% + ${(ky * 0.38 * w).toFixed(1)}px))`;
+  const g = el.querySelector('.gb-thr'); g.hidden = ay !== 'thr'; if (ay === 'thr') g.firstElementChild.style.height = `${Math.round((v.thr || 0) * 100)}%`;
+  el.querySelector('.gb-lab').textContent = `${LAB[ay]} ↕ · ${LAB[ax]} ↔`;
 }
-bindStick($('#vs-left'), (x, y) => { input.virtual.rud = x; input.virtual.thr = (1 - y) / 2; }, set => { const t = input.virtual.thr; set(0, 1 - 2 * t); });
-bindStick($('#vs-right'), (x, y) => { input.virtual.ail = x; input.virtual.ele = y; }, set => set(0, 0));
+function bindGimbal(side){
+  const el = $(`#gb-${side}`); let pid = null, o = null;
+  const r = () => el.getBoundingClientRect(), R = () => r().width * 0.42;
+  const apply = e => { const [ax, ay] = stickRoles()[side], dx = (e.clientX - o.x) / R(), dy = (e.clientY - o.y) / R();
+    input.virtual[ax] = Math.max(-1, Math.min(1, dx));
+    if (ay === 'thr') input.virtual.thr = Math.max(0, Math.min(1, o.thr - dy / 2)); // ratchet: moves from where it was, never jumps
+    else input.virtual[ay] = Math.max(-1, Math.min(1, dy));
+    drawGimbal(side); };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); o = { x:e.clientX, y:e.clientY, thr:input.virtual.thr || 0 }; el.classList.add('active'); apply(e); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) apply(e); });
+  const up = e => { if (e.pointerId !== pid) return; pid = null; el.classList.remove('active'); const [ax, ay] = stickRoles()[side]; input.virtual[ax] = 0; if (ay !== 'thr') input.virtual[ay] = 0; drawGimbal(side); };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+}
+['left', 'right'].forEach(bindGimbal);
+function setRemote(on){
+  input.virtual.on = on; settings.touch = on; saveSettings(); $('#c-touch').checked = on; $('#remote').hidden = !on; document.body.classList.toggle('remote-on', on);
+  if (on) { input.virtual.thr = input.state.thr || 0; input.virtual.ail = input.virtual.ele = input.virtual.rud = 0; drawGimbal('left'); drawGimbal('right'); }
+  checkOrientation();
+}
+$('#c-touch').addEventListener('input', e => setRemote(e.target.checked));
+$('#c-mode').addEventListener('input', () => { drawGimbal('left'); drawGimbal('right'); });
+$('#rm-reset').addEventListener('click', () => { if (replay) exitReplay(); reset(); });
+const rr = $('#rm-rescue'); rr.addEventListener('pointerdown', e => { e.preventDefault(); rescueKey = true; rr.classList.add('on'); }); ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => rr.addEventListener(ev, () => { rescueKey = false; rr.classList.remove('on'); }));
+$('#rm-cam').addEventListener('click', () => $('#hud-cam').click());
+$('#rm-assist').addEventListener('click', () => { const order = ['angle', 'level', 'off'], i = order.indexOf(settings.assist); settings.assist = order[(i + 1) % 3]; $('#f-assist').value = settings.assist; saveSettings(); RC.toast(`Assist: ${{ angle:'beginner', level:'auto-level', off:'off (real)' }[settings.assist]}`); });
+// phones: full screen + landscape, compact layout
+const fsOK = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+$('#hud-fs').hidden = !(TOUCH && fsOK);
+$('#hud-fs').addEventListener('click', async () => { const d = document.documentElement;
+  try { if (document.fullscreenElement || document.webkitFullscreenElement) { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    await (d.requestFullscreen || d.webkitRequestFullscreen).call(d, { navigationUI:'hide' }); if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* not allowed */ }
+  setTimeout(() => world.resize(), 200); });
+document.addEventListener('fullscreenchange', () => { $('#hud-fs').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; setTimeout(() => world.resize(), 200); });
+let portraitOK = false;
+function checkOrientation(){ const portrait = innerHeight > innerWidth && innerWidth < 700; $('#rotate-hint').hidden = !(settings.touch && TOUCH && portrait && !portraitOK); document.body.classList.toggle('sim-compact', TOUCH && Math.min(innerWidth, innerHeight) < 560); $('#hud-home').hidden = !document.body.classList.contains('sim-compact'); }
+$('#rotate-ok').addEventListener('click', () => { portraitOK = true; checkOrientation(); });
+addEventListener('resize', () => { checkOrientation(); setTimeout(() => world.resize(), 100); });
+if (TOUCH && Math.min(innerWidth, innerHeight) < 560) { const sh = $('.sim-shell'); sh.classList.add('panel-hidden'); $('#hud-panel').setAttribute('aria-expanded', 'false'); }
+setRemote(!!settings.touch);
 
 /* ---------------- scenario sharing (#scenario=) ---------------- */
 function scenarioPlane(){ const k = scenario.plane; return k && k.startsWith('builtin:') && sources.has(k) ? k : sources.has('scenario') ? 'scenario' : settings.model; }
@@ -514,7 +554,7 @@ $('#w-scene-clear').addEventListener('click', () => world.setScenery(null, { hid
 
 /* ---------------- graphics ---------------- */
 const GFX_PRESETS = { low:{ shadows:'off', drawDistance:1200, resScale:0.6 }, medium:{ shadows:'low', drawDistance:2000, resScale:0.85 }, high:{ shadows:'medium', drawDistance:3000, resScale:1 }, ultra:{ shadows:'high', drawDistance:5000, resScale:1 } };
-if (!settings.gfx) settings.gfx = Object.assign({ preset:'high' }, GFX_PRESETS.high);
+if (!settings.gfx) { const phone = (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && Math.min(screen.width, screen.height) < 820; settings.gfx = Object.assign({ preset:phone ? 'medium' : 'high' }, phone ? GFX_PRESETS.medium : GFX_PRESETS.high); }
 function applyGraphics(){ const g = settings.gfx; world.setGraphics(g); $('#g-preset').value = g.preset; $('#g-shadows').value = g.shadows; $('#g-res').value = g.resScale; $('#g-dist').value = g.drawDistance;
   $('#g-res-o').textContent = `${Math.round(g.resScale * 100)}%`; $('#g-dist-o').textContent = ALT(g.drawDistance); saveSettings(); }
 $('#g-preset').addEventListener('input', e => { if (GFX_PRESETS[e.target.value]) Object.assign(settings.gfx, GFX_PRESETS[e.target.value]); settings.gfx.preset = e.target.value; applyGraphics(); });

@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1a30">
 <meta name="color-scheme" content="light dark">
 <title>Flight Simulator · RC Calc</title>
 <link rel="icon" href="data:,">
@@ -38,12 +42,23 @@
       <button type="button" class="hud-btn" id="hud-pause" title="Pause (P)" aria-pressed="false">Pause</button>
       <button type="button" class="hud-btn" id="hud-reset" title="Reset (R)">Reset</button>
       <button type="button" class="hud-btn" id="hud-panel" title="Show or hide the panel" aria-expanded="true" aria-controls="sim-panel">Panel</button>
+      <button type="button" class="hud-btn" id="hud-fs" title="Full screen" hidden>Full screen</button>
+      <a class="hud-btn" id="hud-home" href="index.html" title="Back to RC Calc" hidden>Home</a>
     </div>
     <div class="hud hud-bl" id="hud-sticks" aria-hidden="true"></div>
     <div class="hud hud-br" id="hud-chips"></div>
     <div class="hud hud-lesson" id="hud-lesson" hidden></div>
-    <div class="vstick vstick-l" id="vs-left" hidden aria-hidden="true"><span></span></div>
-    <div class="vstick vstick-r" id="vs-right" hidden aria-hidden="true"><span></span></div>
+    <div class="remote" id="remote" hidden>
+      <div class="gimbal" id="gb-left" aria-label="Left stick" role="application"><i class="gb-x"></i><i class="gb-y"></i><b class="gb-thr" aria-hidden="true"><i></i></b><span class="knob"></span><small class="gb-lab"></small></div>
+      <div class="remote-mid">
+        <button type="button" class="sw" id="rm-reset">Reset</button>
+        <button type="button" class="sw" id="rm-rescue">Rescue</button>
+        <button type="button" class="sw" id="rm-cam">Camera</button>
+        <button type="button" class="sw" id="rm-assist">Assist</button>
+      </div>
+      <div class="gimbal" id="gb-right" aria-label="Right stick" role="application"><i class="gb-x"></i><i class="gb-y"></i><b class="gb-thr" aria-hidden="true"><i></i></b><span class="knob"></span><small class="gb-lab"></small></div>
+    </div>
+    <div class="rotate-hint" id="rotate-hint" hidden><div><b>Turn your phone sideways</b><p>The on-screen remote works best in landscape: left stick throttle and rudder, right stick ailerons and elevator.</p><button type="button" class="btn sm" id="rotate-ok">Continue in portrait</button></div></div>
     <div class="sim-fallback" id="sim-fallback" hidden></div>
   </section>
 
@@ -173,7 +188,7 @@
       <h3 class="sub-h">Expo &amp; rates (all devices)</h3>
       <div class="three" id="c-tune"></div>
       <label class="check"><input type="checkbox" id="c-dual"> Low rates (60%)</label>
-      <label class="check"><input type="checkbox" id="c-touch"> On-screen sticks (touch / mouse)</label>
+      <label class="check"><input type="checkbox" id="c-touch"> On-screen remote (touch / mouse): two sticks like a real transmitter</label>
       <details class="assume"><summary>Using a FlySky FS-i6 (or any RC transmitter)</summary>
         <p class="hint">Plug a USB simulator adapter into the radio's trainer/sim port (for example a FlySky FS-SM100 or another dongle listed as FS-i6 compatible). Some setups need the trainer port set to PPM output. The computer sees it as a joystick: it appears above with a <b>Set up</b> button. The wizard learns your channel order, centre, end points and direction, and saves the profile for that adapter. A receiver plus an iBUS/PPM-to-USB adapter works the same way.</p>
       </details>

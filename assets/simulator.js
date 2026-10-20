@@ -11,6 +11,7 @@ const settings = Object.assign({ model:'builtin:trainer', start:'runway', cam:'p
   weather:null, trees:true, throws:{}, gear:{}, cg:{}, color:'#22a6c9' }, RC.store.get(SET_KEY) || {});
 if (!settings.weather) { const old = settings.wind; settings.weather = Object.assign({ preset:'breeze' }, SimPhysics.WEATHER_PRESETS.breeze, { dir:270, tempC:15, elevation:0, qnh:1013.25, show:false }, old ? { preset:'custom', speed:old.speed, dir:old.dir, turbulence:old.gust, gustPeak:old.gust * 4, thermals:old.thermals, show:old.show } : {}); delete settings.wind; }
 if (!settings.instructor) settings.instructor = 'off'; if (settings.hints == null) settings.hints = false; if (settings.ghost == null) settings.ghost = true;
+settings.mount = settings.mount || {}; if (settings.motorFx == null) settings.motorFx = true;
 settings.cg = settings.cg || {}; settings.calibrations = settings.calibrations || {}; if (settings.useCal == null) settings.useCal = true;
 const saveSettings = () => RC.store.set(SET_KEY, settings);
 
@@ -67,8 +68,10 @@ async function loadAircraft(key, keepPose){
 function flightDesign(){ const d = JSON.parse(JSON.stringify(asBuilt(design)));
   if (settings.calibrations[sourceKey]) d.calibration = settings.calibrations[sourceKey];
   if (!settings.useCal) delete d.calibration;
-  if (settings.cg[sourceKey] != null) d.geom.cg = settings.cg[sourceKey]; return d; }
-function buildModel(){ return SimModel.build(flightDesign(), { gear:settings.gear[sourceKey] || 'auto', throws:settings.throws[sourceKey], customMotors:RC.store.get(RC.KEYS.motors, []) || [], rho:env.rhoAt(0) }); }
+  if (settings.cg[sourceKey] != null) d.geom.cg = settings.cg[sourceKey];
+  const mo = settings.mount[sourceKey]; if (mo) { if (mo.down != null) d.geom.thrustDown = mo.down; if (mo.right != null) d.geom.thrustRight = mo.right; if (mo.rot) d.geom.propRot = mo.rot; }
+  if (settings.motorFx === false) { d.geom.thrustDown = 0; d.geom.thrustRight = 0; } return d; }
+function buildModel(){ return SimModel.build(flightDesign(), { gear:settings.gear[sourceKey] || 'auto', throws:settings.throws[sourceKey], customMotors:RC.store.get(RC.KEYS.motors, []) || [], rho:env.rhoAt(0), motorEffects:settings.motorFx !== false }); }
 function startMode(){ let m = lesson && lesson.start ? lesson.start : settings.start; if (m === 'runway' && model.gear === 'none') m = 'hand'; return m; }
 function reset(){
   if (!sim) return;
@@ -314,10 +317,33 @@ function renderModelPanel(){
   for (const a of ['ail', 'ele', 'rud']) { $(`#m-${a}`).value = m.throws[a]; $(`#m-${a}-o`).textContent = `${m.throws[a]}°`; }
   $('#m-gear').value = settings.gear[sourceKey] || 'auto'; $('#m-wing').value = settings.color;
   $('#m-usecal').checked = settings.useCal !== false; $('#m-usecal-hint').textContent = settings.calibrations[sourceKey] || design.calibration ? `Calibration from ${(settings.calibrations[sourceKey] || design.calibration).date || 'flight data'}` : 'No calibration yet (see the Calibrate tab)';
+  renderMountPanel();
   const baseCg = asBuilt(design).geom.cg, cgNow = settings.cg[sourceKey] != null ? settings.cg[sourceKey] : baseCg;
   $('#m-cg').value = cgNow; $('#m-cg-o').textContent = `${fmt(m.cgPctActual, 1)}% MAC`;
   $('#m-cg-hint').textContent = `${settings.cg[sourceKey] != null ? 'Overridden for testing. ' : ''}${design.measured && design.measured.use ? 'Design file uses as-built measurements' : 'Design CG'}: ${fmt(baseCg, 1)}% MAC. Neutral point ≈ ${fmt(m.cgPctActual + SimPhysics.measureStaticMargin(m).SM * 100, 1)}% MAC.`;
 }
+let mountSugCache = { key:'', res:null };
+function mountSuggestion(){ const d = flightDesign(), base = JSON.parse(JSON.stringify(asBuilt(design))); if (settings.cg[sourceKey] != null) base.geom.cg = settings.cg[sourceKey]; const mo = settings.mount[sourceKey]; if (mo && mo.rot) base.geom.propRot = mo.rot;
+  const key = JSON.stringify([sourceKey, base.geom, base.auw, base.power, env.rhoAt(0).toFixed(3)]); if (mountSugCache.key !== key) mountSugCache = { key, res:SimModel.suggestThrustAngles(base, { customMotors:RC.store.get(RC.KEYS.motors, []) || [], rho:env.rhoAt(0) }) }; return mountSugCache.res; }
+function renderMountPanel(){
+  const fx = settings.motorFx !== false, base = asBuilt(design).geom, mo = settings.mount[sourceKey] || {}, dn = mo.down != null ? mo.down : (+base.thrustDown || 0), rt = mo.right != null ? mo.right : (+base.thrustRight || 0);
+  $('#m-motorfx').checked = fx; $('#m-tdown').value = dn; $('#m-tright').value = rt; $('#m-prot').value = mo.rot || base.propRot || 'cw';
+  $('#m-tdown-o').textContent = `${fmt(dn, 1)}°${dn < 0 ? ' (up)' : ''}`; $('#m-tright-o').textContent = `${fmt(rt, 1)}°${rt < 0 ? ' (left)' : ''}`;
+  ['#m-tdown', '#m-tright', '#m-prot', '#m-mount-sug'].forEach(id => { $(id).disabled = !fx; });
+  const over = settings.mount[sourceKey] && Object.keys(settings.mount[sourceKey]).length;
+  $('#m-mount-hint').textContent = !fx ? 'Motor effects are off: thrust acts straight along the fuselage, with no torque or slipstream.' :
+    `${over ? 'Changed for this flight. ' : ''}Design mount: ${SimModel.describeThrust(+base.thrustDown || 0, +base.thrustRight || 0, base.motorPos === 'pusher')}. Run “Test power response”, or open the throttle in level flight, to feel the difference.`;
+}
+let mountT = null;
+const mountChanged = () => { saveSettings(); renderMountPanel(); clearTimeout(mountT); mountT = setTimeout(() => loadAircraft(sourceKey, true), 200); };
+$('#m-motorfx').addEventListener('input', e => { settings.motorFx = e.target.checked; mountChanged(); RC.toast(e.target.checked ? 'Motor effects on: torque, slipstream, P-factor and mount angles' : 'Motor effects off: ideal straight-ahead thrust'); });
+$('#m-tdown').addEventListener('input', e => { settings.mount[sourceKey] = Object.assign({}, settings.mount[sourceKey], { down:+e.target.value }); mountChanged(); });
+$('#m-tright').addEventListener('input', e => { settings.mount[sourceKey] = Object.assign({}, settings.mount[sourceKey], { right:+e.target.value }); mountChanged(); });
+$('#m-prot').addEventListener('input', e => { settings.mount[sourceKey] = Object.assign({}, settings.mount[sourceKey], { rot:e.target.value }); mountChanged(); });
+$('#m-mount-reset').addEventListener('click', () => { delete settings.mount[sourceKey]; mountChanged(); });
+$('#m-mount-sug').addEventListener('click', () => { $('#m-mount-hint').textContent = 'Working out the best mount…'; setTimeout(() => { const r = mountSuggestion();
+  settings.mount[sourceKey] = Object.assign({}, settings.mount[sourceKey], { down:r.down, right:r.right }); mountChanged(); RC.toast(`Mount set to ${SimModel.describeThrust(r.down, r.right, r.pusher)} (${Math.round(r.improvement * 100)}% calmer)`); }, 30); });
+$('#m-mount-test').addEventListener('click', () => { selectTab($('#tab-tests')); const r = runOne('power'); RC.toast(`Power response: ${r.note}`); });
 function updateLinks(){
   const h = '#design=' + RC.b64urlEncode(JSON.stringify(design));
   $('#m-open-designer').href = 'designer.html' + h; $('#nav-designer').href = 'designer.html' + h; $('#nav-build').href = 'build.html' + h;
@@ -429,7 +455,7 @@ bindStick($('#vs-right'), (x, y) => { input.virtual.ail = x; input.virtual.ele =
 /* ---------------- scenario sharing (#scenario=) ---------------- */
 function scenarioPlane(){ const k = scenario.plane; return k && k.startsWith('builtin:') && sources.has(k) ? k : sources.has('scenario') ? 'scenario' : settings.model; }
 function makeScenario(withLesson){
-  const sc = { v:1, title:(design && design.name) || '', plane:sourceKey, weather:Object.assign({}, W, { show:undefined }), start:settings.start, assist:settings.assist, instructor:settings.instructor, gear:settings.gear[sourceKey], throws:settings.throws[sourceKey], cg:settings.cg[sourceKey] };
+  const sc = { v:1, title:(design && design.name) || '', plane:sourceKey, weather:Object.assign({}, W, { show:undefined }), start:settings.start, assist:settings.assist, instructor:settings.instructor, gear:settings.gear[sourceKey], throws:settings.throws[sourceKey], cg:settings.cg[sourceKey], mount:settings.mount[sourceKey], motorFx:settings.motorFx !== false };
   if (!sourceKey.startsWith('builtin:')) { const d = flightDesign(); delete d.calibration; sc.design = d; }
   if (withLesson && lesson) sc.lesson = lesson.def.id; return sc;
 }
@@ -441,6 +467,8 @@ function applyScenario(sc){
   settings.start = pick(sc.start, ['runway', 'hand', 'air']) || settings.start; settings.assist = pick(sc.assist, ['angle', 'level', 'off']) || settings.assist; settings.instructor = pick(sc.instructor, ['off', 'switch', 'auto', 'shared']) || settings.instructor;
   const key = sc.plane && String(sc.plane).startsWith('builtin:') ? sc.plane : 'scenario';
   if (sc.gear) settings.gear[key] = pick(sc.gear, ['auto', 'tricycle', 'taildragger', 'skid', 'none']); if (num(sc.cg, 0, 60) != null) settings.cg[key] = sc.cg;
+  if (typeof sc.motorFx === 'boolean') settings.motorFx = sc.motorFx;
+  if (sc.mount && typeof sc.mount === 'object') settings.mount[key] = { down:num(sc.mount.down, -8, 8), right:num(sc.mount.right, -8, 8), rot:pick(sc.mount.rot, ['cw', 'ccw']) };
   if (sc.throws && typeof sc.throws === 'object') settings.throws[key] = { ail:num(sc.throws.ail, 0, 45), ele:num(sc.throws.ele, 0, 45), rud:num(sc.throws.rud, 0, 45) };
 }
 const scenario = (() => { const sc = RC.readHash('scenario'); if (!sc || sc.v !== 1) return null; try { applyScenario(sc); } catch (e) { setTimeout(() => RC.toast('That scenario link could not be read: ' + e.message), 500); return null; } return sc; })();

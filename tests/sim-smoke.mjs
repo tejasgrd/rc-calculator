@@ -41,8 +41,8 @@ R.lesson = await ev(`({ text:document.querySelector('#hud-lesson').textContent.s
 await ev(`document.querySelector('[data-lesson-stop]') && document.querySelector('[data-lesson-stop]').click()`);
 // "Show me": the demo pilot flies the circuit lesson (sped up)
 R.demo = await ev(`(async () => { RCSim.settings.speed = 4; await RCSim.startLesson('circuit', true); await new Promise(r => setTimeout(r, 2500)); const a = { who:RCSim.who, hud:document.querySelector('#hud-msg') ? document.querySelector('#hud-msg').textContent : '', V:RCSim.sim.telemetry().V };
-  for (let k = 0; k < 120 && !(RCSim.lesson && RCSim.lesson.reported); k++) await new Promise(r => setTimeout(r, 500));
-  RCSim.settings.speed = 1; return Object.assign(a, { done:!!(RCSim.lesson && RCSim.lesson.reported), result:(document.querySelector('#lesson-result') || {}).textContent?.slice(0, 80), crashed:!!RCSim.sim.telemetry().crashed }); })()`);
+  for (let k = 0; k < 180 && !(RCSim.lesson && RCSim.lesson.reported); k++) await new Promise(r => setTimeout(r, 500));
+  RCSim.settings.speed = 1; return Object.assign(a, { lessonText:document.querySelector('#hud-lesson').innerText.slice(0, 120), simT:+RCSim.sim.s.t.toFixed(0), fps:document.querySelector('#hud-fps') ? document.querySelector('#hud-fps').textContent : '', done:!!(RCSim.lesson && RCSim.lesson.reported), result:(document.querySelector('#lesson-result') || {}).textContent?.slice(0, 80), crashed:!!RCSim.sim.telemetry().crashed }); })()`);
 await shot('sim-demo');
 await ev(`RCSim.stopLesson()`);
 // instructor auto take-over: roll the plane to 100° bank at 30 m
@@ -86,6 +86,22 @@ await shot('sim-calibrate');
 await ev(`(() => { const b = document.querySelector('#cal-clear'); b && b.click(); })()`); await sleep(800);
 // replay
 R.replay = await ev(`(() => { RCSim.enterReplay(); return document.querySelector('#r-info').textContent; })()`); await sleep(1500); await shot('sim-replay');
+// pilot view: a plane passing straight overhead must not flip the camera (max camera roll per 1/60 s frame)
+R.overhead = await ev(`(() => { const W = RCSim.world, T = THREE, sp = RCSim.settings.speed; RCSim.settings.speed = 0; W.setCamera('pilot'); let prev = null, max = 0;
+  for (let k = 0; k <= 600; k++) { W.pose([-144 + k * 0.5, -16, -60], [1, 0, 0, 0], { ail:0, ele:0, rud:0, thr:0.5, flap:0 }, 0, 1 / 60); W.updateCamera(1 / 60);
+    const cu = new T.Vector3(0, 1, 0).applyQuaternion(W.camera.quaternion); if (prev) max = Math.max(max, cu.angleTo(prev) * 180 / Math.PI); prev = cu; }
+  RCSim.settings.speed = sp; return { maxCamRollPerFrame:+max.toFixed(1), ok:max < 6 }; })()`);
+// motor mount: effects off vs straight mount vs suggested mount (power-response test flight)
+R.mount = await ev(`(async () => { const wait = ms => new Promise(r => setTimeout(r, ms)); await RCSim.loadAircraft('builtin:trainer'); document.querySelector('#tab-model').click();
+  const fx = document.querySelector('#m-motorfx'), out = {}, set = (id, v) => { const e = document.querySelector(id); e.value = v; e.dispatchEvent(new Event('input')); };
+  fx.checked = false; fx.dispatchEvent(new Event('input')); await wait(700); out.off = RCSim.runOne('power');
+  fx.checked = true; fx.dispatchEvent(new Event('input')); set('#m-tdown', 0); set('#m-tright', 0); await wait(900); out.straight = RCSim.runOne('power');
+  document.querySelector('#m-mount-sug').click(); await wait(2500); out.sug = RCSim.runOne('power'); out.mount = RCSim.settings.mount['builtin:trainer']; out.hint = document.querySelector('#m-mount-hint').textContent.slice(0, 120);
+  document.querySelector('#m-mount-reset').click(); await wait(700);
+  const pick = r => ({ yaw:+r.yaw.toFixed(1), bank:+r.bank.toFixed(1), pitch:+r.pitch.toFixed(1), match:r.match, note:r.note });
+  return { off:pick(out.off), straight:pick(out.straight), sug:pick(out.sug), mount:out.mount, hint:out.hint }; })()`);
+await ev(`document.querySelector('#tab-tests').click()`); await sleep(300); await shot('sim-power-test');
+await ev(`(() => { document.querySelector('#tab-model').click(); document.querySelector('#m-motorfx').scrollIntoView({ block:'start' }); })()`); await sleep(400); await shot('sim-mount-panel');
 // graphics presets
 R.gfx = await ev(`(async () => { const set = (id, v) => { const e = document.querySelector(id); e.value = v; e.dispatchEvent(new Event('input')); }; const w = RCSim.world, out = {};
   for (const p of ['low', 'ultra', 'high']) { set('#g-preset', p); await new Promise(r => setTimeout(r, 400)); out[p] = { sh:w.renderer.shadowMap.enabled, map:w.sun.shadow.mapSize.x, far:Math.round(w.camera.far), fog:Math.round(w.scene.fog.far), pr:+w.renderer.getPixelRatio().toFixed(2) }; }

@@ -149,6 +149,15 @@
           <div class="diag-fields"><div class="field"><label for="s-flcf">Flap chord (%)</label><input id="s-flcf" type="number" step="any" min="10" max="50" data-path="geom.surfaces.flapCf" data-scale="100"></div><div class="field"><label for="s-fl0">Flap from span (%)</label><input id="s-fl0" type="number" step="any" min="0" max="90" data-path="geom.surfaces.flapStart" data-scale="100"></div><div class="field"><label for="s-fl1">Flap to span (%)</label><input id="s-fl1" type="number" step="any" min="5" max="100" data-path="geom.surfaces.flapEnd" data-scale="100"></div></div>
           <div class="diag-fields"><div class="field"><label for="s-tha">Aileron throw (°)</label><input id="s-tha" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwAil" data-optional placeholder="auto"></div><div class="field"><label for="s-the">Elevator throw (°)</label><input id="s-the" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwEle" data-optional placeholder="auto"></div><div class="field"><label for="s-thr">Rudder throw (°)</label><input id="s-thr" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwRud" data-optional placeholder="auto"></div><div class="field"><label for="s-thf">Flap throw (°)</label><input id="s-thf" type="number" step="any" min="0" max="60" data-path="geom.surfaces.throwFlap" data-optional placeholder="auto"></div></div>
         </fieldset>
+        <fieldset class="group" style="margin-top:6px" id="mount-box"><legend>Motor mount (thrust line) <a class="help" href="rc-plane-calculator.html#learn-thrustline" aria-label="Learn about thrust angles">?</a></legend>
+          <p class="hint" style="margin-top:0">Tilting the motor stops the plane pitching or swinging when you change power. Down-thrust points the thrust slightly below the fuselage line; right-thrust points it towards the right wing. Look at the prop from behind the plane to see which way it spins.</p>
+          <div class="diag-fields">
+            <div class="field"><label for="m-down">Down-thrust (°)</label><input id="m-down" type="number" step="0.5" min="-8" max="8" data-path="geom.thrustDown"><p class="hint">Negative = up-thrust</p></div>
+            <div class="field"><label for="m-right">Right-thrust (°)</label><input id="m-right" type="number" step="0.5" min="-8" max="8" data-path="geom.thrustRight"><p class="hint">Negative = left-thrust</p></div>
+            <div class="field"><label for="m-rot">Prop spins (seen from behind)</label><select id="m-rot" data-path="geom.propRot"><option value="cw">Clockwise (standard tractor prop)</option><option value="ccw">Anti-clockwise (reverse rotation)</option></select></div>
+          </div>
+          <div id="mount-suggest" class="readout" aria-live="polite"></div>
+        </fieldset>
         <div class="actions"><button type="button" class="btn" id="g-auto"><span class="ico"><svg aria-hidden="true"><use href="#i-magic"/></svg></span>Auto-proportion tail &amp; fuselage</button></div>
       </form>
       <div>
@@ -312,6 +321,8 @@
 <script src="assets/rc-templates.js"></script>
 <script src="assets/rc-3d.js"></script>
 <script src="assets/rc-charts.js"></script>
+<script src="assets/rc-sim-model.js"></script>
+<script src="assets/rc-sim-physics.js"></script>
 <script src="assets/designer.js"></script>
 </body>
 </html>

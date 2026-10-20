@@ -61,7 +61,7 @@ function render(){
   $('#b-sheet').innerHTML = Templates.renderSheetSVG(lay, { pages, title }).replace(/width="[\d.]+mm" height="[\d.]+mm"/, '');
   $('#page-grid').innerHTML = pages.map(p => `<button type="button" class="page-thumb" data-page="${p.n - 1}" aria-label="Download page ${p.n} (row ${p.r + 1}, column ${p.c + 1}) as SVG" style="padding:0;cursor:pointer">${Templates.renderPageSVG(lay, pages, p, paper, { title, idPrefix:'th' }).replace(/width="[\d.]+mm" height="[\d.]+mm"/, '')}<span>${p.n} · ${p.r + 1}-${p.c + 1}</span></button>`).join('');
   $('#cut-table').innerHTML = `<thead><tr><th scope="col">Part</th><th scope="col">Qty</th><th scope="col">Material</th><th scope="col">Size</th><th scope="col">Note</th></tr></thead><tbody>${parts.filter(p => p.material !== 'paper').map(p => `<tr><th scope="row">${esc(p.name)}</th><td class="num">${p.qty}</td><td>${esc(p.material)}</td><td class="num">${L(p.w - 4)} × ${L(p.h - 4)}</td><td>${esc(p.note)}</td></tr>`).join('')}</tbody>`;
-  renderBOM(); renderSteps();
+  renderBOM(); renderSteps(); renderMount();
   RC.store.set(RC.KEYS.build, { forDesign:design.name, opt });
 }
 function bomSizing(){
@@ -105,6 +105,7 @@ function renderSteps(){
     ]),
     g.tailless ? 'Glue the tip fins square to the wing tips.' : 'Cut the stabilizer, fin, elevator and rudder; bevel the hinge lines and hinge them with tape. Glue the tail on square to the wing (check from behind).',
     g.body === 'stick' ? 'Laminate the nose blocks either side of the boom, add the motor mount behind the wing, and glue the wing and tail to the boom.' : 'Glue the fuselage sides to the formers (check that the box is square), then add the top and bottom. Fit the firewall with the motor mount.',
+    ...(Templates.mountShims(design.geom).any ? [`Set the motor mount to ${descT(+design.geom.thrustDown || 0, +design.geom.thrustRight || 0)} with the wedges or washers listed above, and check it by eye from above and from the side before gluing.`] : []),
     'Install the motor, ESC, receiver and servos. Make the pushrods, centre the servos with the radio on, and set the control throws (start with about 10 mm for a trainer).',
     `Balance the plane at the recommended CG (${fmt(design.geom.cg, 0)}% MAC, shown on the Designer's Stability step) with the battery installed. Move the battery, don't add weight, where possible.`,
     'Bind the receiver and set the failsafe to throttle off. Range-check, then do a restrained bench test while watching the current on a watt meter.',
@@ -112,6 +113,28 @@ function renderSteps(){
   $('#steps').innerHTML = s.map(t => `<li>${esc(t)}</li>`).join('');
 }
 
+/* ---------------- motor mount angles ---------------- */
+let mountSug = null, mountBusy = false;
+const descT = (dn, rt) => typeof SimModel !== 'undefined' ? SimModel.describeThrust(dn, rt, design.geom.motorPos === 'pusher') : `${dn}° down, ${rt}° right`;
+function shimHTML(geom){
+  const ms = Templates.mountShims(geom), mmf = v => opt.unit === 'in' ? `${fmt(v / 25.4, 3)} in` : `${fmt(v, 1)} mm`;
+  if (!ms.any) return '';
+  const rows = ms.rows.map(r => `<tr><th scope="row">${r.spacing} mm</th>${Math.abs(ms.dn) >= 0.25 ? `<td class="num">${mmf(r.pitch)}</td>` : ''}${Math.abs(ms.rt) >= 0.25 ? `<td class="num">${mmf(r.yaw)}</td>` : ''}</tr>`).join('');
+  const where = [Math.abs(ms.dn) >= 0.25 ? `behind the <b>${ms.pitchSide}</b> screws` : '', Math.abs(ms.rt) >= 0.25 ? `behind the <b>${ms.yawSide}</b> screws` : ''].filter(Boolean).join(' and ');
+  return `<p style="margin:6px 0">Put spacers (washers) ${where} of the motor mount, as seen from behind the plane${ms.pusher ? ' (pusher: the mount faces backwards, so the sides are swapped compared with a nose motor)' : ''}. Thickness for the distance between the mount's screw holes:</p>
+    <div class="table-scroll"><table class="data"><thead><tr><th scope="col">Hole spacing</th>${Math.abs(ms.dn) >= 0.25 ? `<th scope="col">${ms.dn > 0 ? 'Down' : 'Up'}-thrust spacer (${ms.pitchSide})</th>` : ''}${Math.abs(ms.rt) >= 0.25 ? `<th scope="col">${ms.rt > 0 ? 'Right' : 'Left'}-thrust spacer (${ms.yawSide})</th>` : ''}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="hint">M3 washers are about 0.5 mm thick. On a glued-in foam firewall, use the printed wedge templates instead: glue the wedge behind the mount with its thick end where shown.</p>`;
+}
+function renderMount(){
+  const el = $('#mount-out'), dn = +design.geom.thrustDown || 0, rt = +design.geom.thrustRight || 0, straight = Math.abs(dn) < 0.25 && Math.abs(rt) < 0.25;
+  let html = straight ? '<p style="margin:0">This design has a <b>straight</b> motor mount.</p>' : `<p style="margin:0">From your design: <b>${esc(descT(dn, rt))}</b>.</p>${shimHTML(design.geom)}`;
+  if (mountSug) { const s = mountSug, differs = Math.abs(s.down - dn) > 0.75 || Math.abs(s.right - rt) > 0.75;
+    if (differs) html += `<div class="callout ${straight ? 'info' : 'warn'}" style="margin-top:8px">${icon('info')}<span>Suggested for this design: <b>${esc(descT(s.down, s.right))}</b> (${Math.round(s.improvement * 100)}% calmer when you open the throttle). ${s.why.length ? esc('Why: ' + s.why.join('; ') + '.') : ''} <a href="designer.html#design=${RC.b64urlEncode(JSON.stringify(design))}">Apply it in the Designer</a> (step 3), or use these spacers:</span></div>${straight ? shimHTML(Object.assign({}, design.geom, { thrustDown:s.down, thrustRight:s.right })) : ''}`;
+    else if (!straight) html += '<p class="hint" style="margin-top:6px">This matches the suggested mount for the design.</p>'; }
+  else if (typeof SimModel !== 'undefined') { html += '<p class="hint" style="margin-top:6px">Working out the suggested angles…</p>';
+    if (!mountBusy) { mountBusy = true; setTimeout(() => { try { mountSug = SimModel.suggestThrustAngles(asBuilt(design), { customMotors:(RC.store.get(RC.KEYS.motors, []) || []) }); } catch (e) { mountSug = null; } renderMount(); }, 300); } }
+  el.innerHTML = html;
+}
 function printTemplates(){
   const { lay, pages, paper } = state, title = design.name || 'design';
   $('#print-pages').innerHTML = pages.map(p => Templates.renderPageSVG(lay, pages, p, paper, { title, idPrefix:'pr' })).join('');

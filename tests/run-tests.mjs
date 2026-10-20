@@ -317,6 +317,24 @@ if (run('typeof SimLessons') !== 'undefined') {
   t('import: picks the main file from a multi-file selection; extras and credits survive .rcsim packages; unsafe links dropped', im.pick === 'scene.gltf' && im.pick2 === 'a.obj' && im.ex.join() === '1,2,3' && im.meta === 'Jane (https://x)' && im.safe[0] === null && im.safe[1] === 'https://a.b', JSON.stringify(im));
   const den = run(`[airDensity(15, 0), airDensity(35, 2000), densityAltitude(airDensity(35, 2000)), SimPhysics.airDensity === airDensity]`);
   t('air density lives in rc-core (Designer + simulator share it): ISA sea level 1.225, hot & high ≈ 0.90', Math.abs(den[0] - 1.225) < 0.002 && Math.abs(den[1] - 0.899) < 0.01 && den[2] > 3000 && den[3], den);
+  // --- motor mount: thrust angles, prop rotation, torque, spiral slipstream, P-factor ---
+  const mt = run(`(() => { const D = 180 / Math.PI, base = SimModel.builtinDesign('trainer'), env = { windB:() => [0, 0, 0], rho:1.225, soc:1, h:50 };
+    const rates = m => { const sim = new SimPhysics.Sim(m, { env:new SimPhysics.Environment({ speed:0 }) }); sim.reset('air', { alt:80 }); for (let k = 0; k < 60; k++) sim.step(1 / 60, { ail:0, ele:0, rud:0, thr:m.trim.throttle, flap:0 });
+      let p = 0, r = 0; for (let k = 0; k < 90; k++) { sim.step(1 / 60, { ail:0, ele:0, rud:0, thr:1, flap:0 }); p += sim.s.w[0]; r += sim.s.w[2]; } return { p:p / 90 * D, r:r / 90 * D }; };
+    const withG = g => Object.assign({}, base, { geom:Object.assign({}, base.geom, g) });
+    const dM = (dn, rt) => { const m = SimModel.build(base, { thrustDown:dn, thrustRight:rt }), V = m.trim.V, a = m.trim.alphaDeg / D, st = { v:[V * Math.cos(a), 0, V * Math.sin(a)], w:[0, 0, 0] };
+      const f = t => SimPhysics.forces(m, st, { ail:0, ele:0, rud:0, thr:t, flap:0 }, env).M; return f(1); };
+    const m00 = dM(0, 0), mR = dM(0, 1), mD = dM(1, 0);
+    return { off:rates(SimModel.build(base, { motorEffects:false })), cw:rates(SimModel.build(withG({ thrustDown:0, thrustRight:0, propRot:'cw' }))), ccw:rates(SimModel.build(withG({ thrustDown:0, thrustRight:0, propRot:'ccw' }))),
+      right:{ dyaw:mR[2] - m00[2], dpitch:mR[1] - m00[1] }, down:{ dpitch:mD[1] - m00[1], dyaw:mD[2] - m00[2] } }; })()`);
+  t('motor effects off: full power adds no roll or yaw (ideal motor)', Math.abs(mt.off.p) < 0.05 && Math.abs(mt.off.r) < 0.05, JSON.stringify(mt.off));
+  t('straight mount, clockwise prop (from behind): torque, slipstream and P-factor swing the nose left; an anti-clockwise prop swings it right', mt.cw.r < -2 && mt.cw.p < 0 && mt.ccw.r > 2 && mt.ccw.p > 0, JSON.stringify([mt.cw, mt.ccw]));
+  t('right-thrust yaws the nose right and down-thrust pitches it down, without cross-coupling', mt.right.dyaw > 0 && Math.abs(mt.right.dpitch) < 0.2 * mt.right.dyaw && mt.down.dpitch < 0 && Math.abs(mt.down.dyaw) < 0.2 * Math.abs(mt.down.dpitch), JSON.stringify([mt.right, mt.down]));
+  const sug = run(`(() => { const out = {}; for (const k of ['trainer', 'sport', 'wing', 'aerobat']) { const d = SimModel.builtinDesign(k), sg = SimModel.suggestThrustAngles(d);
+    out[k] = { down:sg.down, right:sg.right, built:[d.geom.thrustDown, d.geom.thrustRight], imp:+sg.improvement.toFixed(2), why:sg.why.length, text:SimModel.describeThrust(sg.down, sg.right, sg.pusher) }; } return out; })()`);
+  t('suggested mount angles cut the full-power swing by ≥ 40 % (trainer, sport, flying wing, aerobat)', Object.values(sug).every(x => x.imp >= 0.4 && x.why >= 1), JSON.stringify(sug));
+  t('built-in planes ship with their suggested mount angles (±1°)', Object.values(sug).every(x => Math.abs(x.down - x.built[0]) <= 1 && Math.abs(x.right - x.built[1]) <= 1), JSON.stringify(sug));
+  t('mount wording: tractor down/right, pusher explains which end of the motor moves', sug.trainer.text.includes('down-thrust') && sug.trainer.text.includes('right-thrust') && /prop end/.test(sug.wing.text), [sug.trainer.text, sug.wing.text]);
   t('3-channel planes: the aileron stick steers with rudder', r3[0] === 'none' && r3[1] === 0 && r3[2] > 0.9, r3);
 }
 

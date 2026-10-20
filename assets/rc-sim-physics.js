@@ -43,24 +43,37 @@ const SimPhysics = (() => {
     // propulsion first (slipstream feeds the strips)
     const spool = st.spool != null ? st.spool : ctrl.thr;
     const p = lerpTable(model.thrTableAt ? model.thrTableAt(rho) : model.thrTable, spool), fv = Math.min(1.12, (vocCell(env.soc != null ? env.soc : 1) - 0.0) / 3.85);
-    const vaxial = dot(sub(st.v, env.windB(model.prop.r)), [1, 0, 0]);
+    const pr = model.prop, ax = pr.axis || [1, 0, 0], fx = model.motorFx !== false && pr.realistic !== false;
+    const vrelP = sub(add(st.v, cross(st.w, pr.r)), env.windB(pr.r)), vaxial = dot(vrelP, ax);
     let T = cal.thrust * p.T0 * fv * fv * (1 - vaxial / (1.15 * Math.max(1, p.Vp * fv)));
     if (env.motorOff) T = 0;
     T = Math.max(-0.08 * model.mass * G * Math.min(1, Math.abs(vaxial) / 15), T);
     const Va = Math.max(0, vaxial), vi = T > 0 ? (-Va + Math.sqrt(Va * Va + 2 * T / (rho * model.prop.A))) / 2 : 0, wash = 1.6 * vi;
-    F[0] += T; const Mt = cross(model.prop.r, [T, 0, 0]); M[0] += Mt[0]; M[1] += Mt[1]; M[2] += Mt[2];
+    // thrust along the (possibly down/right-tilted) prop axis; P-factor moves the thrust centre towards the descending blade
+    const Tv = scl(ax, T), om = scl(ax, pr.dir || 1); let rT = pr.r;
+    // blade-element estimate: the cross-flow v⊥ changes each blade's speed by ±v⊥, moving the thrust centre by ≈ v⊥/Ω
+    if (fx && T > 0) { const vp = sub(vrelP, scl(ax, vaxial)), Om = Math.max(80, p.rpm * fv * 2 * Math.PI / 60); rT = add(pr.r, scl(cross(vp, om), (pr.pFactor != null ? pr.pFactor : 1) / Om)); }
+    F[0] += Tv[0]; F[1] += Tv[1]; F[2] += Tv[2]; const Mt = cross(rT, Tv); M[0] += Mt[0]; M[1] += Mt[1]; M[2] += Mt[2];
     // shaft power from momentum theory: P = T (V + v_i) / η, η rising from the static figure of merit to ~0.7 in cruise
     const xJ = clamp(Va / Math.max(1, 1.15 * p.Vp * fv), 0, 1), etaP = 0.6 + 0.1 * xJ;
     const PshDyn = env.motorOff || T <= 0 ? 0 : Math.min(p.Psh * fv * fv * fv, T * (Va + vi) / etaP);
     const etaM = p.Pin > 0 ? p.Psh / p.Pin : 0.75, PinDyn = PshDyn / Math.max(0.3, etaM), Iscale = p.Pin > 0 ? PinDyn / (p.Pin * fv * fv * fv) : 0;
     const omegaP = Math.max(50, p.rpm * fv * 2 * Math.PI / 60), Q = PshDyn / omegaP;
-    M[0] -= Q * (model.torqueFactor != null ? model.torqueFactor : 0.6); // prop torque reaction (partly cancelled by slipstream swirl)
+    // torque reaction (opposite to the prop's rotation) and the spiral slipstream it leaves behind (angular momentum Q = ṁ·v_t·r)
+    const mdot = rho * pr.A * (Va + vi), kQ = pr.torqueK != null ? pr.torqueK : 0.6, swirl = fx && Q > 0 && mdot > 1e-4 ? 0.75 * kQ * Q / mdot : 0; // swirl left at the tail: part was straightened out by the wing, the rest decays along the fuselage
+    if (fx) { M[0] -= om[0] * Q * kQ; // reaction left after the wing/tail straighten part of the slipstream
+      M[1] -= om[1] * Q * kQ; M[2] -= om[2] * Q * kQ; }
+    const omX = [pr.dir || 1, 0, 0]; // the slipstream is carried aft along the fuselage, whatever the motor tilt
+    const swirlAt = r => { const rp = [0, r[1] - pr.r[1], r[2] - pr.r[2]], rr = Math.hypot(...rp); if (rr < 1e-4) return [0, 0, 0];
+      const Rs = 0.5 * pr.D * 0.9; if (rr > 1.25 * Rs) return [0, 0, 0]; // contracted slipstream, rigid-body swirl: v_t = 2·Q·r / (ṁ·R²)
+      return scl(cross(omX, rp), 2 * swirl * Math.min(rr, Rs) / (Rs * Rs) / rr); };
     // ground effect factor
     const hb = Math.max(0.02, (env.h != null ? env.h : 50) / model.bref), ge = (16 * hb) ** 2 / (1 + (16 * hb) ** 2);
     let wingL = 0, wingQS = 0, stalled = 0, area = 0;
     const out = { strips:[] };
     const doStrip = (s, eps) => {
-      const vs = add(st.v, cross(st.w, s.r)), wa = sub(vs, env.windB(s.r));
+      const vs = add(st.v, cross(st.w, s.r)); let wa = sub(vs, env.windB(s.r));
+      if (s.inWash && swirl > 0 && s.kind === 'fin') wa = sub(wa, swirlAt(s.r)); // one-sided surface: the spiral slipstream yaws it
       let uc = dot(wa, s.c), un = dot(wa, s.n);
       if (s.inWash && wash > 0) uc += wash * 0.8;
       const V2 = uc * uc + un * un; if (V2 < 1e-6) return;
@@ -94,7 +107,7 @@ const SimPhysics = (() => {
       const ft = add(fd, fs); F[0] += ft[0]; F[1] += ft[1]; F[2] += ft[2]; const m = cross(fu.r, ft); M[0] += m[0]; M[1] += m[1]; M[2] += m[2];
       if (model.gear !== 'none') { const gd = scl(wf, -0.5 * rho * Vf * 0.0012 * Math.max(0.3, model.mass) * cal.cd0); F[0] += gd[0]; F[1] += gd[1]; F[2] += gd[2]; }
     }
-    out.F = F; out.M = M; out.T = T; out.CLw = CLw; out.stallFrac = area ? stalled / area : 0;
+    out.F = F; out.M = M; out.T = T; out.Q = Q; out.swirl = swirl; out.CLw = CLw; out.stallFrac = area ? stalled / area : 0;
     out.I = env.motorOff ? 0 : p.I * fv * fv * Iscale * cal.current; out.Pin = env.motorOff ? 0 : PinDyn * cal.current; out.Psh = PshDyn; out.rpm = env.motorOff ? 0 : p.rpm * fv * (0.92 + 0.08 * xJ);
     return out;
   }
@@ -304,6 +317,7 @@ const SimPhysics = (() => {
   const wrap180 = a => ((a + 540) % 360) - 180;
 
   /* ---------- automated flight tests (compare with Designer predictions) ---------- */
+  const fmtN = v => (Math.round(v * 10) / 10).toString();
   const TESTS = {
     cruise:{ name:'Cruise (level at design cruise speed)', dur:28 },
     stall:{ name:'Stall speed and wing drop', dur:40 },
@@ -311,6 +325,7 @@ const SimPhysics = (() => {
     glide:{ name:'Glide ratio (motor off)', dur:22 },
     topspeed:{ name:'Top speed (level, full throttle)', dur:30 },
     roll:{ name:'Roll rate (full aileron)', dur:2.6 },
+    power:{ name:'Power response (full throttle, hands off)', dur:3.6 },
     stability:{ name:'Static margin (pitch stiffness, CG check)', dur:0 },
   };
   /** runTest(model, id, pred, o): runs a test on its own Sim instance (no wind) and returns measured results. */
@@ -329,7 +344,7 @@ const SimPhysics = (() => {
     const env = new Environment({ speed:0, gust:0, thermals:false, rhoFixed:model.rho || RHO_SL }), sim = new Sim(model, { env, start:'air' }), ap = new Autopilot(sim);
     const vc = model.trim.V, alt0 = 60; sim.reset('air', { alt:alt0 });
     const dt = 1 / 60, res = { id, name:TESTS[id].name }, samples = [];
-    let tg = {}, phase = 0, t0 = 0, minV = Infinity, stallAt = null, maxRoll = 0, start = null, thetaRel = null;
+    let tg = {}, phase = 0, t0 = 0, minV = Infinity, stallAt = null, maxRoll = 0, start = null, thetaRel = null, pw = null;
     for (let t = 0; t < TESTS[id].dur; t += dt) {
       const tl = sim.telemetry();
       if (id === 'cruise') { tg = { alt:alt0, speed:vc }; if (t > 15) samples.push(tl); }
@@ -342,7 +357,8 @@ const SimPhysics = (() => {
       else if (id === 'glide') { tg = { speedOnPitch:pred.vLD || vc * 0.9, thr:0, phi:0 }; if (t > 8) samples.push(tl); }
       else if (id === 'topspeed') { tg = { alt:alt0, thr:1, phi:0 }; samples.push(tl); }
       else if (id === 'roll') { tg = t < 1.5 ? { alt:alt0, speed:vc } : { ail:1, ele:0, thr:model.trim.throttle }; if (t >= 1.5 && t <= 2.5) maxRoll = Math.max(maxRoll, Math.abs(tl.p)); }
-      sim.step(dt, ap.fly(tg, dt)); if (o.rec) o.rec.push(sim);
+      else if (id === 'power') { if (t < 2) tg = { alt:alt0, speed:vc }; else { if (!pw) pw = { tl, ele:sim.ctrl.ele }; tg = { direct:{ ail:0, ele:pw.ele, rud:0, thr:1, flap:0 } }; } }
+      sim.step(dt, tg.direct ? tg.direct : ap.fly(tg, dt)); if (o.rec) o.rec.push(sim);
       if (sim.s.crashed || sim.s.p[2] > -2) { res.aborted = sim.s.crashed ? sim.s.crashed.reason : 'Too low'; break; }
     }
     const avg = k => samples.reduce((a, s) => a + s[k], 0) / Math.max(1, samples.length);
@@ -352,7 +368,11 @@ const SimPhysics = (() => {
     if (id === 'glide') { const a = samples[0], b = samples[samples.length - 1]; const dx = a && b ? Math.hypot(b.pos[0] - a.pos[0], b.pos[1] - a.pos[1]) : 0, dh = a && b ? a.alt - b.alt : 1; Object.assign(res, { measured:dh > 0 ? dx / dh : null, pred:pred.LDmax, unit:':1', label:'Glide ratio', V:avg('V') }); }
     if (id === 'topspeed') { const last = samples.slice(-120); Object.assign(res, { measured:last.reduce((a, s) => a + s.V, 0) / Math.max(1, last.length), pred:pred.vmax, unit:'m/s', label:'Top speed' }); }
     if (id === 'roll') Object.assign(res, { measured:maxRoll, pred:null, unit:'°/s', label:'Peak roll rate' });
-    if (res.pred != null && res.measured != null) { res.diff = (res.measured - res.pred) / res.pred; res.match = Math.abs(res.diff) <= 0.15 ? 'ok' : Math.abs(res.diff) <= 0.3 ? 'warn' : 'bad'; }
+    if (id === 'power' && pw) { const e = sim.telemetry(), dPsi = wrap180(e.psi - pw.tl.psi), dPhi = e.phi - pw.tl.phi, dTh = e.theta - pw.tl.theta, side = v => v < 0 ? 'left' : 'right';
+      Object.assign(res, { measured:Math.abs(dPsi), pred:null, unit:'°', label:'Nose swing in 1.5 s', yaw:dPsi, bank:dPhi, pitch:dTh, mount:{ down:model.prop.thrustDown, right:model.prop.thrustRight }, motorFx:model.motorFx !== false,
+        match:Math.abs(dPsi) < 5 && Math.abs(dPhi) < 10 ? 'ok' : Math.abs(dPsi) < 12 ? 'warn' : 'bad',
+        note:`${model.motorFx === false ? 'motor effects off · ' : ''}nose ${Math.abs(dPsi) < 1 ? 'straight' : `${fmtN(Math.abs(dPsi))}° ${side(dPsi)}`}, bank ${Math.abs(dPhi) < 1 ? 'level' : `${fmtN(Math.abs(dPhi))}° ${side(dPhi)}`}, pitch ${dTh >= 0 ? '+' : '−'}${fmtN(Math.abs(dTh))}° (mount ${fmtN(model.prop.thrustDown)}° down, ${fmtN(model.prop.thrustRight)}° right)` }); }
+    if (res.pred != null && res.measured != null && id !== 'power') { res.diff = (res.measured - res.pred) / res.pred; res.match = Math.abs(res.diff) <= 0.15 ? 'ok' : Math.abs(res.diff) <= 0.3 ? 'warn' : 'bad'; }
     return res;
   }
 

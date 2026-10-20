@@ -153,28 +153,86 @@ const SimModel = (() => {
       [g.xvLE + d.vChord, 0, g.vBaseZ + d.vHeight], [g.xwLE + d.rootChord / 2, 0, g.wingZ + 0.06 * d.rootChord], [g.propX, 0, g.propZ - D / 2], [g.propX, 0, g.propZ + D / 2]];
     if (!g.tailless) skids.push([g.xhLE + d.hChord, d.hSpan / 2, g.hTailZ], [g.xhLE + d.hChord, -d.hSpan / 2, g.hTailZ]);
     skids.forEach((r, i) => contacts.push({ r:toB(r), kind:i >= 7 && i <= 8 ? 'prop' : 'skid' }));
-    const propInfo = { r:toB([g.propX, 0, g.propZ]), D, A:Math.PI * D * D / 4, axis:[1, 0, 0], pusher, dir:1 };
+    // thrust line: down-thrust (+ = thrust points below the fuselage datum) and right-thrust (+ = towards the right wing), degrees
+    const tDown = opts.thrustDown != null ? opts.thrustDown : (+d.thrustDown || 0), tRight = opts.thrustRight != null ? opts.thrustRight : (+d.thrustRight || 0);
+    const motorFx = opts.motorEffects !== false, axis = motorFx ? norm([Math.cos(tDown * DEG) * Math.cos(tRight * DEG), Math.sin(tRight * DEG), Math.sin(tDown * DEG)]) : [1, 0, 0];
+    const propInfo = { r:toB([g.propX, 0, g.propZ]), D, A:Math.PI * D * D / 4, axis, pusher, dir:d.propRot === 'ccw' ? -1 : 1, thrustDown:motorFx ? tDown : 0, thrustRight:motorFx ? tRight : 0 };
     // slipstream: which strips are in the prop wash
     strips.forEach(s => { const dyz = Math.hypot(s.r[1] - propInfo.r[1], s.r[2] - propInfo.r[2]); s.inWash = (pusher ? s.r[0] < propInfo.r[0] : s.r[0] < propInfo.r[0]) && dyz < D * 0.55; });
-    const model = { name:design.name || 'Aircraft', mass, I, Iinv:inv3(I), strips, fuse, contacts, gear, prop:propInfo, motor, propSpec:prop, cells, capacity_mAh:cap, thrTable, thrTableAt, rho:rhoField, asBuilt:!!design.asBuilt,
+    propInfo.torqueK = strips.some(s => s.kind === 'wing' && s.inWash) ? 0.6 : 0.9;
+    const model = { name:design.name || 'Aircraft', motorFx, mass, I, Iinv:inv3(I), strips, fuse, contacts, gear, prop:propInfo, motor, propSpec:prop, cells, capacity_mAh:cap, thrTable, thrTableAt, rho:rhoField, asBuilt:!!design.asBuilt,
       throws:Object.assign({}, rig.throws, (design.sim && design.sim.throws) || {}, designThrows(SP), opts.throws || {}), surfaces:SP, hasFlaps, surf, Sref:g.S, bref:d.span, cref:g.mac, AR:g.AR, af, geom:d, g, cgGeo, cgPctActual, cgPctDesign:d.cg, cgShift:xb !== xbIdeal && !(ballast > 0),
       cal:Object.assign({ cd0:1, clmax:1, thrust:1, current:1, roll:1 }, design.calibration && design.calibration.factors && opts.calibrated !== false ? design.calibration.factors : {}), calibrated:!!(design.calibration && design.calibration.factors && opts.calibrated !== false),
       battery:{ x:xb, ideal:xbIdeal }, ballast_g:ballast * 1000, tailIncidence:0, elevonTrim:0, wingIncidence:iw, points:pts, alphaStallDeg:((0.9 * af.clmax) / aw3 + alpha0 - iw) / DEG };
     model.trim = trim(model, opts.trimSpeed || null);
     return model;
   }
+  /**
+   * Suggested motor-mount angles: the down- and right-thrust that make full power add no pitching or yawing moment at
+   * the cruise trim (so opening the throttle climbs straight instead of ballooning/diving or swinging). Uses the same
+   * physics as the simulator: thrust-line height vs CG, prop wash on the tail, spiral slipstream on the fin, P-factor.
+   */
+  function suggestThrustAngles(design, opts = {}){
+    const base = Object.assign({}, opts, { motorEffects:true, thrustDown:0, thrustRight:0 }), m = build(design, base), V = m.trim.V, al = m.trim.alphaDeg * DEG;
+    const st = { v:[V * Math.cos(al), 0, V * Math.sin(al)], w:[0, 0, 0] }, env = { windB:() => [0, 0, 0], rho:m.rho, soc:1, h:50 };
+    const dM = (down, right) => { const pr = m.prop, keep = pr.axis;
+      pr.axis = norm([Math.cos(down * DEG) * Math.cos(right * DEG), Math.sin(right * DEG), Math.sin(down * DEG)]);
+      const lo = SimPhysics.forces(m, st, { ail:0, ele:0, rud:0, thr:m.trim.throttle, flap:0 }, env), hi = SimPhysics.forces(m, st, { ail:0, ele:0, rud:0, thr:1, flap:0 }, env);
+      pr.axis = keep; return { pitch:hi.M[1] - lo.M[1], yaw:hi.M[2] - lo.M[2], roll:hi.M[0] - lo.M[0], dT:hi.T - lo.T }; };
+    const z = dM(0, 0), pd = dM(1, 0), pr1 = dM(0, 1);
+    const kd = pd.pitch - z.pitch, kr = pr1.yaw - z.yaw, lim = 6, r05 = v => Math.round(v * 2) / 2;
+    const down = Math.abs(kd) > 1e-9 ? Math.max(-lim, Math.min(lim, -z.pitch / kd)) : 0, right = Math.abs(kr) > 1e-9 ? Math.max(-lim, Math.min(lim, -z.yaw / kr)) : 0;
+    // what causes it (for the explanation)
+    const g = m.g, d = m.geom, thrustBelowCG_mm = m.prop.r[2] * 1000, tailInWash = m.strips.some(s => s.kind === 'htail' && s.inWash), finInWash = m.strips.some(s => s.kind === 'fin' && s.inWash);
+    const why = [];
+    if (Math.abs(thrustBelowCG_mm) >= 5) why.push(`the thrust line is ${Math.abs(Math.round(thrustBelowCG_mm))} mm ${thrustBelowCG_mm > 0 ? 'below' : 'above'} the balance point, so power pitches the nose ${thrustBelowCG_mm > 0 ? 'up' : 'down'}`);
+    if (tailInWash) why.push('the tailplane sits in the prop wash, so power changes its load');
+    const yawSide = z.yaw < 0 ? 'left' : 'right';
+    if (finInWash) why.push(`the spiral slipstream from the ${m.prop.dir > 0 ? 'clockwise' : 'anti-clockwise'} prop (seen from behind) pushes on the fin and yaws the nose ${yawSide}`);
+    if (!m.prop.pusher) why.push(`P-factor at climb angles pulls the nose ${m.prop.dir > 0 ? 'left' : 'right'}`);
+    if (Math.abs(z.roll) > 1e-3) why.push(`motor torque rolls the plane ${m.prop.dir > 0 ? 'left' : 'right'} (thrust angles can't cancel this: trim it with a little aileron)`);
+    const pusher = m.prop.pusher;
+    // refine on the real (dynamic) response: 1.5 s hands-off at full power from trimmed cruise, compared with an ideal
+    // airframe whose thrust passes through the balance point with no wash, swirl, torque or P-factor
+    let fin = { down:r05(down), right:r05(right) }, swing0 = null, swing = null, swingAt = null;
+    if (opts.refine !== false) {
+      const run = (mm, setup) => { const keep = { axis:mm.prop.axis.slice(), r:mm.prop.r.slice(), fx:mm.motorFx, ti:mm.tailIncidence, et:mm.elevonTrim, wash:mm.strips.map(s => s.inWash), tr:mm.trim };
+        setup(mm); mm.trim = trim(mm, V); const sim = new SimPhysics.Sim(mm, { env:new SimPhysics.Environment({ speed:0 }) }); sim.reset('air', { alt:80, heading:0 });
+        for (let k = 0; k < 30; k++) sim.step(1 / 60, { ail:0, ele:0, rud:0, thr:mm.trim.throttle, flap:0 });
+        const w = []; for (let k = 0; k < 90; k++) { sim.step(1 / 60, { ail:0, ele:0, rud:0, thr:1, flap:0 }); if (k % 3 === 2) w.push(sim.s.w.slice()); }
+        mm.prop.axis = keep.axis; mm.prop.r = keep.r; mm.motorFx = keep.fx; mm.tailIncidence = keep.ti; mm.elevonTrim = keep.et; mm.strips.forEach((s, i) => { s.inWash = keep.wash[i]; }); mm.trim = keep.tr; return w; };
+      const ref = run(m, mm => { mm.motorFx = false; mm.prop.axis = [1, 0, 0]; mm.prop.r = [mm.prop.r[0], 0, 0]; mm.strips.forEach(s => { s.inWash = false; }); });
+      const axisOf = (dn, rt) => norm([Math.cos(dn * DEG) * Math.cos(rt * DEG), Math.sin(rt * DEG), Math.sin(dn * DEG)]), memo = new Map();
+      const J = (dn, rt) => { const k = dn + '/' + rt; if (memo.has(k)) return memo.get(k); const w = run(m, mm => { mm.prop.axis = axisOf(dn, rt); });
+        let e = 0; w.forEach((x, i) => { e += 0.3 * (x[0] - ref[i][0]) ** 2 + (x[1] - ref[i][1]) ** 2 + (x[2] - ref[i][2]) ** 2; }); /* roll weighs less: torque roll is trimmed with aileron, not mount angles */ const v = Math.sqrt(e / w.length) / DEG; memo.set(k, v); return v; };
+      swing0 = J(0, 0); let best = J(fin.down, fin.right) < swing0 ? { ...fin } : { down:0, right:0 }, bJ = J(best.down, best.right);
+      for (const step of [2, 1, 0.5]) { let moved = true;
+        while (moved) { moved = false; for (const [a, b] of [[step, 0], [-step, 0], [0, step], [0, -step]]) { const c = { down:Math.max(-lim, Math.min(lim, best.down + a)), right:Math.max(-lim, Math.min(lim, best.right + b)) }, v = J(c.down, c.right); if (v < bJ - 1e-6) { best = c; bJ = v; moved = true; } } } }
+      fin = best; swing = bJ; swingAt = (dn, rt) => J(+dn || 0, +rt || 0);
+    }
+    return { down:fin.down, right:fin.right, staticDown:r05(down), staticRight:r05(right), downExact:down, rightExact:right, swing0, swing, swingAt, improvement:swing0 ? 1 - swing / swing0 : null, pusher, propRot:m.prop.dir > 0 ? 'cw' : 'ccw', V, throttleCruise:m.trim.throttle,
+      noAngles:{ pitchNm:z.pitch, yawNm:z.yaw, rollNm:z.roll }, perDeg:{ pitch:kd, yaw:kr }, thrustBelowCG_mm, tailInWash, finInWash, why,
+      large:Math.abs(down) >= lim || Math.abs(right) >= lim };
+  }
+  /** Human wording for a down/right thrust pair, e.g. "2.5° down, 1.5° right" or for pushers "2° up-thrust (prop end lower)". */
+  function describeThrust(down, right, pusher){
+    const parts = [], a = v => `${Math.abs(v).toFixed(1).replace(/\.0$/, '')}°`;
+    if (Math.abs(down) >= 0.25) parts.push(down > 0 ? `${a(down)} down-thrust${pusher ? ' (prop end higher)' : ''}` : `${a(down)} up-thrust${pusher ? ' (prop end lower)' : ''}`);
+    if (Math.abs(right) >= 0.25) parts.push(`${a(right)} ${right > 0 ? 'right' : 'left'}-thrust${pusher ? ` (prop end towards the ${right > 0 ? 'left' : 'right'})` : ''}`);
+    return parts.length ? parts.join(', ') : 'straight (0°, 0°)';
+  }
   /** Built-in models, generated by the same sizing pipeline as the Designer (so they are editable there). */
   const BUILTINS = {
-    trainer:  { name:'Trainer (high wing)', req:{ mission:'trainer', preset:'trainer', span_m:1.2, stall_ms:null, payload_kg:0, flightMin:8, cells:'auto', material:'depron' }, airfoil:'clarky', dihedral:8 },
-    sport:    { name:'Sport (low wing)', req:{ mission:'sport', preset:'lowwing', span_m:1.0, stall_ms:null, payload_kg:0, flightMin:7, cells:'auto', material:'depron' }, airfoil:'naca2412' },
-    wing:     { name:'Flying wing', req:{ mission:'wing', preset:'flyingwing', span_m:0.9, stall_ms:null, payload_kg:0, flightMin:8, cells:'auto', material:'depron' }, airfoil:'reflex', washout:3 },
-    glider:   { name:'Powered glider', req:{ mission:'glider', preset:'chuck', span_m:1.5, stall_ms:null, payload_kg:0, flightMin:10, cells:'auto', material:'depron' }, airfoil:'naca6409', dihedral:8 },
-    aerobat:  { name:'3D aerobat', req:{ mission:'aerobatic', preset:'lowwing', span_m:0.9, stall_ms:null, payload_kg:0, flightMin:5, cells:3, material:'depron' }, airfoil:'naca0012', dihedral:0, sim:{ throws:{ ail:32, ele:30, rud:35 } } },
+    trainer:  { name:'Trainer (high wing)', req:{ mission:'trainer', preset:'trainer', span_m:1.2, stall_ms:null, payload_kg:0, flightMin:8, cells:'auto', material:'depron' }, airfoil:'clarky', dihedral:8, mount:[6, 5] },
+    sport:    { name:'Sport (low wing)', req:{ mission:'sport', preset:'lowwing', span_m:1.0, stall_ms:null, payload_kg:0, flightMin:7, cells:'auto', material:'depron' }, airfoil:'naca2412', mount:[1, 3] },
+    wing:     { name:'Flying wing', req:{ mission:'wing', preset:'flyingwing', span_m:0.9, stall_ms:null, payload_kg:0, flightMin:8, cells:'auto', material:'depron' }, airfoil:'reflex', washout:3, mount:[-2, -5.5] },
+    glider:   { name:'Powered glider', req:{ mission:'glider', preset:'chuck', span_m:1.5, stall_ms:null, payload_kg:0, flightMin:10, cells:'auto', material:'depron' }, airfoil:'naca6409', dihedral:8, mount:[6, -3.5] },
+    aerobat:  { name:'3D aerobat', req:{ mission:'aerobatic', preset:'lowwing', span_m:0.9, stall_ms:null, payload_kg:0, flightMin:5, cells:3, material:'depron' }, airfoil:'naca0012', dihedral:0, sim:{ throws:{ ail:32, ele:30, rud:35 } }, mount:[-1, 3] },
   };
   function builtinDesign(key){
     const b = BUILTINS[key] || BUILTINS.trainer, af = Airfoil.get(b.airfoil);
     const sz = sizeAircraft(Object.assign({ clmax:af.clmax }, b.req));
-    const geom = Object.assign({}, sz.geom, { washout:b.washout || 0 }, b.dihedral != null ? { dihedral:b.dihedral } : {});
+    const geom = Object.assign({}, sz.geom, { washout:b.washout || 0, propRot:'cw', thrustDown:b.mount ? b.mount[0] : 0, thrustRight:b.mount ? b.mount[1] : 0 }, b.dihedral != null ? { dihedral:b.dihedral } : {}); // mount = suggestThrustAngles()
     const design = { v:1, name:b.name, builtin:key, req:Object.assign({ keep250:false, budget:0, currency:'$' }, b.req), airfoilId:b.airfoil, customAirfoil:null, geom, auw:sz.auw,
       sizing:{ breakdown:sz.breakdown, auw:sz.auw }, power:null, perf:{ etaProp:0.6, etaMotor:0.75, gear:false }, smTarget:0.1, cells:sz.cells, capacity_mAh:sz.capacity_mAh, sim:b.sim || null };
     const vc = sz.vc, best = matchPowerSystems({ motors:MOTOR_DB, cellsList:[sz.cells], props:PROPS_EXT, capacity_mAh:sz.capacity_mAh, targetPower:sz.P, cruise:vc, weightN:sz.auw * G, style:sz.style, limit:1 })[0];
@@ -225,6 +283,6 @@ const SimModel = (() => {
     const st = stabilityAnalysis(Object.assign({}, d, { cg:model.cgPctActual }), g, { cm0:af.cm0 });
     return { SM:st.SM, vs:pf.vs, vLD:pf.vLD, LDmax:pf.LDmax, vmax:pf.vmax, rocMax:pf.rocMax, vClimb:pf.vClimb, cruisePower:pf.cruise.Preq, sinkMin:pf.sinkMin, stallStation:ll.stallStation };
   }
-  return { build, trim, flapTau, inv3, PRESET_RIG, BUILTINS, builtinDesign, predictions, vec:{ add, sub, scl, dot, cross, norm } };
+  return { build, trim, suggestThrustAngles, describeThrust, flapTau, inv3, PRESET_RIG, BUILTINS, builtinDesign, predictions, vec:{ add, sub, scl, dot, cross, norm } };
 })();
 if (typeof module !== 'undefined') module.exports = { SimModel };

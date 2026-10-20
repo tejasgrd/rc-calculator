@@ -50,7 +50,7 @@ const Templates = (() => {
     const g = airframeGeometry(d, o.propD_m || 0.2), parts = [];
     const s = d.span / 2 * 1000, cr = d.rootChord * 1000, ct = d.tipChord * 1000, tan = Math.tan(d.sweep * Math.PI / 180);
     const xLE = y => y * tan, c = y => cr + (ct - cr) * y / s, xTE = y => xLE(y) + c(y);
-    const L = mm => o.unit === 'in' ? `${fmt(mm / 25.4, 2)} in` : `${fmt(mm, 0)} mm`;
+    const L = mm => o.unit === 'in' ? `${fmt(mm / 25.4, 2)} in` : `${fmt(mm, 0)} mm`, L1 = mm => o.unit === 'in' ? `${fmt(mm / 25.4, 3)} in` : `${fmt(mm, 1)} mm`;
     const surf = g.tailless ? 'elevons' : (o.surf || 'ailerons');
     const SP = surfaceSpec(d), eh = 1 - SP.eleCf, rh = 1 - SP.rudCf;
     const ail = surf === 'elevons' ? [SP.elevonStart, SP.elevonEnd, SP.elevonCf] : surf === 'ailerons' ? [SP.ailStart, SP.ailEnd, SP.ailCf] : null;
@@ -137,7 +137,28 @@ const Templates = (() => {
       frames.forEach(([nm, x]) => { const w = Math.max(5, fp.width(x) - 2 * (o.method === 'balsa' ? 2 : o.sheetT || 6)), h = Math.max(5, fp.top(x) - fp.bot(x));
         parts.push(P(`Former ${nm}`, 1, o.method === 'balsa' || nm.startsWith('F1') ? 'plywood 3 mm' : fuseMat, [rect(0, 0, w, h), path('ref', [[w / 2, 0], [w / 2, h]])], [{ x:1.5, y:4, text:nm.split(' ')[0], size:3 }], `at ${L(x)} from nose`)); });
     }
+    // motor-mount wedges: glue behind the motor mount (or firewall) to set the thrust angles
+    const ms = mountShims(d);
+    if (ms.any) {
+      const x0 = 0.02 * fp.Lf, fwH = g.body === 'stick' ? 25 : Math.max(20, fp.top(x0) - fp.bot(x0)), fwW = g.body === 'stick' ? 25 : Math.max(20, fp.width(x0)), t0 = 1.5, tan = a => Math.tan(Math.abs(a) * Math.PI / 180);
+      const wedge = (len, ang, thick, kind) => { const t1 = t0 + len * tan(ang);
+        return P(`Motor-mount wedge (${kind} ${fmtA(ang)})`, 1, 'plywood 1.5–3 mm or balsa', [path('cut', [[0, 0], [len, 0], [len, t0], [0, t1]], true)],
+          [{ x:1, y:t1 + 4, text:`${kind.toUpperCase()} ${fmtA(ang)}: thick end ${thick.toUpperCase()}`, size:3 }], `${L1(t1)} → ${L1(t0)} over ${L(len)}; thick end at the ${thick} of the mount (seen from behind)`); };
+      if (Math.abs(ms.dn) >= 0.25) parts.push(wedge(fwH, ms.dn, ms.pitchSide, ms.dn > 0 ? 'down-thrust' : 'up-thrust'));
+      if (Math.abs(ms.rt) >= 0.25) parts.push(wedge(fwW, ms.rt, ms.yawSide, ms.rt > 0 ? 'right-thrust' : 'left-thrust'));
+    }
     return parts;
+  }
+  const fmtA = a => `${(+Math.abs(a).toFixed(1)).toString()}°`;
+  /**
+   * Where the spacers go on the motor mount, as seen from behind the plane, and how thick they are for common
+   * motor-mount hole spacings (16 / 19 / 25 mm). Tractor: down-thrust → spacers behind the TOP screws, right-thrust →
+   * behind the LEFT screws. A pusher faces the other way, so both sides swap.
+   */
+  function mountShims(d, spacings = [16, 19, 25]){
+    const dn = +d.thrustDown || 0, rt = +d.thrustRight || 0, flip = d.motorPos === 'pusher' ? -1 : 1, tan = a => Math.tan(Math.abs(a) * Math.PI / 180);
+    return { dn, rt, any:Math.abs(dn) >= 0.25 || Math.abs(rt) >= 0.25, pusher:flip < 0, pitchSide:dn * flip > 0 ? 'top' : 'bottom', yawSide:rt * flip > 0 ? 'left' : 'right',
+      rows:spacings.map(sp => ({ spacing:sp, pitch:sp * tan(dn), yaw:sp * tan(rt) })) };
   }
 
   function layout(parts, paper){
@@ -198,6 +219,6 @@ const Templates = (() => {
     const sheetArea = mat && mat.sheet ? mat.sheet[0] * mat.sheet[1] : 1e6;
     return { partArea_mm2:area, sheets:Math.max(1, Math.ceil(area * 1.35 / sheetArea)) };
   }
-  return { PAPERS, LINE, OVERLAP, generateParts, layout, paginate, renderSheetSVG, renderPageSVG, partSVG, stats, fuseProfiles };
+  return { PAPERS, LINE, OVERLAP, generateParts, mountShims, layout, paginate, renderSheetSVG, renderPageSVG, partSVG, stats, fuseProfiles };
 })();
 if (typeof module !== 'undefined') module.exports = { Templates };

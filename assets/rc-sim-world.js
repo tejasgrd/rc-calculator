@@ -147,7 +147,7 @@ const SimWorld = (() => {
       const M = mul(mul(Pm, R), Pt), m4 = new THREE.Matrix4().set(M[0][0], M[0][1], M[0][2], 0, M[1][0], M[1][1], M[1][2], 0, M[2][0], M[2][1], M[2][2], 0, 0, 0, 0, 1);
       A.root.quaternion.setFromRotationMatrix(m4);
       const th = A.model.throws, D = Math.PI / 180;
-      A.propAngle = (A.propAngle + (rpm || 0) / 60 * 2 * Math.PI * Math.min(dt || 0, 0.05)) % (Math.PI * 2);
+      A.propAngle = (A.propAngle + (A.model.prop && A.model.prop.dir < 0 ? -1 : 1) * (rpm || 0) / 60 * 2 * Math.PI * Math.min(dt || 0, 0.05)) % (Math.PI * 2);
       for (const s of A.surfaces) {
         let ang = 0;
         if (s.role === 'aileron') ang = -s.side * th.ail * ctrl.ail;
@@ -178,7 +178,8 @@ const SimWorld = (() => {
       const tgt = A.root.position, cam = this.camera;
       if (this.camMode === 'pilot' || this.photo) {
         const pp = nedToThree(PILOT); cam.position.set(pp[0], -PILOT[2], pp[2]);
-        const look = this.smooth.look ? this.smooth.look.lerp(tgt, Math.min(1, dt * 12)) : tgt.clone(); this.smooth.look = look; cam.lookAt(look);
+        const look = this.smooth.look ? this.smooth.look.lerp(tgt, Math.min(1, dt * 12)) : tgt.clone(); this.smooth.look = look;
+        cam.up.copy(this.pilotUp(look.clone().sub(cam.position).normalize(), dt)); cam.lookAt(look);
         const dist = cam.position.distanceTo(tgt), fov = this.autoZoom ? Math.max(6, Math.min(55, 2 * Math.atan(A.span * 3.2 / Math.max(1, dist)) * 180 / Math.PI)) : 55;
         cam.fov += (fov - cam.fov) * Math.min(1, dt * 4); cam.updateProjectionMatrix();
       } else if (this.camMode === 'chase') {
@@ -198,6 +199,18 @@ const SimWorld = (() => {
       const sd = this.sunDir; this.sun.position.set(tgt.x + sd.x * 120, tgt.y + sd.y * 120, tgt.z + sd.z * 120); this.sun.target.position.copy(tgt); this.sun.target.updateMatrixWorld();
       this.clouds.position.set(cam.position.x * 0.9, 0, cam.position.z * 0.9);
       this.sky.position.copy(cam.position);
+    }
+    /** Camera "up" for the ground view that never snaps: lookAt with a fixed world up flips 180° when the plane passes overhead.
+        Keep the previous up (perpendicular to the view), and turn it back towards the sky at a limited rate, like a pilot turning around. */
+    pilotUp(d, dt){
+      const THREE = T(), u = this.smooth.up ? this.smooth.up.clone() : new THREE.Vector3(0, 1, 0);
+      u.addScaledVector(d, -u.dot(d)); if (u.lengthSq() < 1e-6) u.set(0, 1, 0).addScaledVector(d, -d.y);
+      if (u.lengthSq() < 1e-6) u.set(1, 0, 0).addScaledVector(d, -d.x); u.normalize();
+      const w = new THREE.Vector3(0, 1, 0).addScaledVector(d, -d.y), elev = Math.asin(Math.max(-1, Math.min(1, d.y))) * 180 / Math.PI;
+      if (w.lengthSq() > 1e-6) { w.normalize();
+        const ang = Math.atan2(new THREE.Vector3().crossVectors(u, w).dot(d), u.dot(w)), f = Math.max(0, Math.min(1, (86 - elev) / 8)), maxStep = 4.2 * dt * f; // up to 240°/s once below ~78°
+        u.applyAxisAngle(d, Math.max(-maxStep, Math.min(maxStep, ang))); }
+      this.smooth.up = u; return u;
     }
     /** Graphics quality: shadows 'off'|'low'|'medium'|'high', drawDistance (m), resScale (0.4..1 of the device pixel ratio). */
     setGraphics(g){

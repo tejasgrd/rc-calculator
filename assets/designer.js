@@ -14,7 +14,7 @@ const CAT = { light:['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300'
 
 /* ---------------- state ---------------- */
 function defaultDesign(){
-  const geom = Object.assign(autoProportion('trainer', 1.0, 'trainer', 1 / 6.5), { washout:0, surfaces:Object.assign({}, SURFACE_DEFAULTS) });
+  const geom = Object.assign(autoProportion('trainer', 1.0, 'trainer', 1 / 6.5), { washout:0, surfaces:Object.assign({}, SURFACE_DEFAULTS), thrustDown:0, thrustRight:0, propRot:'cw' });
   return { v:1, name:'My trainer',
     req:{ mission:'trainer', preset:'trainer', payload_kg:0, stall_ms:null, span_m:1.0, flightMin:8, cells:'auto', material:'depron', keep250:false, budget:150, currency:'$' },
     airfoilId:'clarky', customAirfoil:null, geom, auw:0.16, sizing:null, power:null, perf:{ etaProp:0.6, etaMotor:0.75, gear:false, tempC:15, elevation:0 },
@@ -31,6 +31,7 @@ function sanitize(d){
   if (d.airfoilId === 'custom' && !(d.customAirfoil && Array.isArray(d.customAirfoil.points))) d.airfoilId = 'clarky';
   for (const k of ['span','rootChord','tipChord','fuseLen','vHeight','vChord']) if (!(d.geom[k] > 0)) d.geom[k] = defaultDesign().geom[k];
   for (const k of ['sweep','dihedral','washout','cg','hSpan','hChord','tailArm']) if (!isFinite(d.geom[k])) d.geom[k] = k === 'cg' ? 28 : 0;
+  ensureMount(d.geom);
   if (!(d.auw > 0)) d.auw = 0.16;
   d.geom.surfaces = Object.assign({}, SURFACE_DEFAULTS, d.geom.surfaces || {});
   d.measured = Object.assign({ use:false, auw_kg:null, cg_m:null }, d.measured || {});
@@ -191,8 +192,9 @@ function renderAirfoil(){
   $('#af-note').innerHTML = af.approx || af.estimated ? `<div class="callout warn">${icon('warn')}<span>${af.approx ? 'This shape is a generated approximation, good for comparing. For balsa ribs of a named airfoil, import its exact .dat coordinates.' : 'CLmax and drag of imported airfoils are estimated from thickness and camber.'}</span></div>` : '';
 }
 
+function ensureMount(g){ if (g.propRot !== 'ccw') g.propRot = 'cw'; for (const k of ['thrustDown', 'thrustRight']) { const v = +g[k]; g[k] = isFinite(v) ? Math.max(-8, Math.min(8, v)) : 0; } }
 function renderAnalyses(){
-  A = analyze();
+  ensureMount(design.geom); A = analyze();
   renderGeometry(); renderStability(); renderWing(); renderPerf(); renderPower(); render3D(); updateLinks(); save();
 }
 function renderGeometry(){
@@ -202,6 +204,25 @@ function renderGeometry(){
   const svg = holder.querySelector('svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('class', 'diagram-svg');
   $('#g-readout').innerHTML = [`Area <b>${show('area', g.S)}</b>`, `AR <b>${fmt(g.AR, 1)}</b>`, `MAC <b>${show('length', g.mac)}</b>`, `Wing loading <b>${show('wingLoading', design.auw / g.S)}</b>`,
     `V<sub>h</sub> <b>${g.tailless ? 'n/a' : fmt(g.Vh, 2)}</b>`, `V<sub>v</sub> <b>${fmt(g.Vv, 3)}</b>`].map(t => `<span class="pill">${t}</span>`).join('');
+  renderMount();
+}
+/* ---------------- motor mount (thrust angles) ---------------- */
+let mountCache = { key:'', res:null }, mountT = null;
+function mountKey(){ const d = JSON.parse(JSON.stringify(asBuilt(design))); delete d.geom.thrustDown; delete d.geom.thrustRight; delete d.saved; return JSON.stringify(d); }
+function renderMount(){
+  const el = $('#mount-suggest'), key = mountKey(); if ($('#m-rot').value !== design.geom.propRot) $('#m-rot').value = design.geom.propRot;
+  if (mountCache.key !== key) { el.innerHTML = '<span class="hint">Working out the best mount angles for this design…</span>'; clearTimeout(mountT);
+    mountT = setTimeout(() => { try { mountCache = { key, res:SimModel.suggestThrustAngles(asBuilt(design), { customMotors:allMotors().filter(m => m.custom) }) }; } catch (e) { mountCache = { key, res:null, err:e.message }; } renderMount(); }, 450); return; }
+  const r = mountCache.res; if (!r) { el.textContent = 'Could not work out mount angles for this design' + (mountCache.err ? `: ${mountCache.err}` : '.'); return; }
+  const cur = [+design.geom.thrustDown || 0, +design.geom.thrustRight || 0], same = cur[0] === r.down && cur[1] === r.right, sc = r.swingAt ? r.swingAt(cur[0], cur[1]) : null;
+  const ds = v => `${fmt(v, 1)}°/s`, small = r.improvement != null && r.improvement < 0.25;
+  el.innerHTML = `<p style="margin:0 0 6px">Suggested for this design: <b>${esc(SimModel.describeThrust(r.down, r.right, r.pusher))}</b>
+      ${same ? '<span class="tag tag-physics">in use</span>' : '<button type="button" class="btn sm" id="mount-use">Use suggested</button>'}</p>
+    <p class="hint" style="margin:0 0 6px">Opening the throttle from cruise, the nose swings about <b>${ds(r.swing0)}</b> with a straight mount${sc != null && !(cur[0] === 0 && cur[1] === 0) && !same ? `, <b>${ds(sc)}</b> with yours` : ''} and <b>${ds(r.swing)}</b> with the suggestion (${Math.round(r.improvement * 100)}% calmer). Same physics as the simulator.</p>
+    ${r.why.length ? `<p class="hint" style="margin:0">Why: ${esc(r.why.join('; '))}.</p>` : ''}
+    ${small ? '<p class="hint" style="margin:4px 0 0">Tilting the motor makes little difference on this plane (the prop is close to the balance point): a straight mount is fine; trim with elevator and rudder.</p>' : ''}
+    ${r.large ? '<p class="hint" style="margin:4px 0 0">More than 6° would be needed to cancel it completely. Moving the thrust line closer to the balance point (motor height) is a better fix than a steeper mount.</p>' : ''}`;
+  const b = $('#mount-use'); if (b) b.addEventListener('click', () => { design.geom.thrustDown = r.down; design.geom.thrustRight = r.right; syncFields(); renderAnalyses(); RC.toast(`Motor mount set to ${SimModel.describeThrust(r.down, r.right, r.pusher)}`); });
 }
 function renderStability(){
   const { stab:s, g, d } = A, mm = f => show('length', s.fromRootLE(f));

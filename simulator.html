@@ -117,6 +117,16 @@
       <label class="check"><input type="checkbox" id="m-usecal" checked> Use flight-data calibration</label><p class="hint" id="m-usecal-hint" style="margin-top:-4px"></p>
       <div class="field"><label for="m-cg">CG for this flight: <output id="m-cg-o"></output></label><input id="m-cg" type="range" min="0" max="60" step="0.5"><p class="hint" id="m-cg-hint"></p></div>
       <div class="actions" style="margin-top:0"><button type="button" class="btn sm" id="m-cg-reset">Use design / measured CG</button></div>
+      <h3 class="sub-h">Motor mount &amp; motor effects</h3>
+      <label class="check"><input type="checkbox" id="m-motorfx" checked> Motor effects: torque, spiral slipstream, P-factor and thrust angles</label>
+      <p class="hint" style="margin-top:-4px">Off = an ideal motor that only pushes straight ahead (handy for learning). On = the real thing: without the right mount the plane swings and pitches when you change power.</p>
+      <div class="row2">
+        <div class="field"><label for="m-tdown">Down-thrust: <output id="m-tdown-o"></output></label><input id="m-tdown" type="range" min="-8" max="8" step="0.5"></div>
+        <div class="field"><label for="m-tright">Right-thrust: <output id="m-tright-o"></output></label><input id="m-tright" type="range" min="-8" max="8" step="0.5"></div>
+      </div>
+      <div class="field"><label for="m-prot">Prop spins (seen from behind)</label><select id="m-prot"><option value="cw">Clockwise (standard)</option><option value="ccw">Anti-clockwise</option></select></div>
+      <p class="hint" id="m-mount-hint" aria-live="polite"></p>
+      <div class="actions" style="margin-top:0"><button type="button" class="btn sm" id="m-mount-sug">Use suggested mount</button><button type="button" class="btn sm" id="m-mount-reset">Use design's mount</button><button type="button" class="btn sm" id="m-mount-test">Test power response</button></div>
       <div class="field"><label for="m-ail">Aileron throw: <output id="m-ail-o"></output></label><input id="m-ail" type="range" min="0" max="40" step="1"></div>
       <div class="field"><label for="m-ele">Elevator throw: <output id="m-ele-o"></output></label><input id="m-ele" type="range" min="0" max="40" step="1"></div>
       <div class="field"><label for="m-rud">Rudder throw: <output id="m-rud-o"></output></label><input id="m-rud" type="range" min="0" max="45" step="1"></div>

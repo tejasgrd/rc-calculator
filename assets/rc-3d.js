@@ -51,8 +51,8 @@ const Mesh3D = (() => {
         return [x / 1000, w * Math.sign(ca) * Math.pow(Math.abs(ca), 2 / ex), zc + hz * Math.sign(sa) * Math.pow(Math.abs(sa), 2 / ex)]; }));
     }
     loft(tris, rings, 'fuse'); cap(tris, rings[0], 'fuse', true); cap(tris, rings[K], 'fuse', false);
-    // motor + spinner
-    const pusher = d.motorPos === 'pusher', mx0 = pusher ? g.propX - g.mlen - 0.004 * d.fuseLen : g.propX + 0.004 * d.fuseLen, r = g.mdia / 2;
+    // motor + spinner (tilted by the mount's down/right-thrust about the point where the motor meets the airframe)
+    const pusher = d.motorPos === 'pusher', mx0 = pusher ? g.propX - g.mlen - 0.004 * d.fuseLen : g.propX + 0.004 * d.fuseLen, r = g.mdia / 2, iMotor = tris.length;
     const cyl = [mx0, mx0 + g.mlen].map(x => Array.from({ length:14 }, (_, m) => { const a = 2 * Math.PI * m / 14; return [x, r * Math.cos(a), g.propZ + r * Math.sin(a)]; }));
     loft(tris, cyl, 'motor'); cap(tris, cyl[0], 'motor', true); cap(tris, cyl[1], 'motor', false);
     const tipX = g.propX + (pusher ? 1 : -1) * 0.09 * g.D, spin = Array.from({ length:14 }, (_, m) => { const a = 2 * Math.PI * m / 14; return [g.propX, 0.05 * g.D * Math.cos(a), g.propZ + 0.05 * g.D * Math.sin(a)]; });
@@ -64,6 +64,8 @@ const Mesh3D = (() => {
       tris.push({ p:[qq[0], qq[1], qq[2]], part:'prop' }, { p:[qq[0], qq[2], qq[3]], part:'prop' }); }
     const disc = Array.from({ length:36 }, (_, m) => { const a = 2 * Math.PI * m / 36; return [g.propX, g.D / 2 * Math.cos(a), g.propZ + g.D / 2 * Math.sin(a)]; });
     for (let m = 0; m < 36; m++) tris.push({ p:[[g.propX, 0, g.propZ], disc[m], disc[(m + 1) % 36]], part:'disc', solid:false });
+    const tilt = mountTilt(d, g);
+    if (tilt) for (let k = iMotor; k < tris.length; k++) tris[k].p = tris[k].p.map(tilt);
     let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
     tris.forEach(t => { t.n = norm(cross(sub(t.p[1], t.p[0]), sub(t.p[2], t.p[0]))); t.p.forEach(v => { for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], v[i]); hi[i] = Math.max(hi[i], v[i]); } }); });
     const center = lo.map((v, i) => (v + hi[i]) / 2), size = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
@@ -87,6 +89,13 @@ const Mesh3D = (() => {
    * buildParts(d, {airfoil, propD, surf, flaps}) → { parts:[{name, tris, hinge:[a,b]|null, axis:'hinge'|'prop'|null}], geometry }
    * Same shapes as build(), but ailerons/elevons/flaps, elevator, rudder and prop are separate parts (geometry frame).
    */
+  /** Rotation for the motor/prop: forward (−x) tilts down by thrustDown and right by thrustRight, about the mount point. */
+  function mountTilt(d, g){
+    const dn = (+d.thrustDown || 0) * Math.PI / 180, rt = (+d.thrustRight || 0) * Math.PI / 180; if (!dn && !rt) return null;
+    const pusher = d.motorPos === 'pusher', px = pusher ? g.propX - g.mlen - 0.004 * d.fuseLen : g.propX + 0.004 * d.fuseLen + g.mlen, P = [px, 0, g.propZ];
+    const cd = Math.cos(dn), sd = Math.sin(dn), cr = Math.cos(rt), sr = Math.sin(rt);
+    return p => { const x = p[0] - P[0], y = p[1] - P[1], z = p[2] - P[2], x1 = x * cd - z * sd, z1 = x * sd + z * cd; return [P[0] + x1 * cr + y * sr, P[1] - x1 * sr + y * cr, P[2] + z1]; };
+  }
   function buildParts(d, o = {}){
     const g = airframeGeometry(d, o.propD || 0.2), af = (o.airfoil || Airfoil.get('clarky')).points, tailPts = Airfoil.naca4(0, 0.4, 0.07, 24);
     const b2 = d.span / 2, tsw = Math.tan(d.sweep * Math.PI / 180), tdi = Math.tan(d.dihedral * Math.PI / 180), wash = -(d.washout || 0) * Math.PI / 180;
@@ -123,8 +132,9 @@ const Mesh3D = (() => {
     const full = build(d, { airfoil:o.airfoil, propD:o.propD });
     full.tris.forEach(t => { if (t.part === 'fuse' || t.part === 'motor') body.push(t); });
     parts.unshift({ name:'body', tris:body, hinge:null, role:'body' });
-    parts.push({ name:'prop', tris:full.tris.filter(t => t.part === 'prop'), hinge:[[g.propX, 0, g.propZ], [g.propX - 1, 0, g.propZ]], role:'prop' });
-    parts.push({ name:'disc', tris:full.tris.filter(t => t.part === 'disc'), hinge:[[g.propX, 0, g.propZ], [g.propX - 1, 0, g.propZ]], role:'disc' });
+    const tl = mountTilt(d, g) || (p => p), hub = tl([g.propX, 0, g.propZ]), hub2 = tl([g.propX - 1, 0, g.propZ]);
+    parts.push({ name:'prop', tris:full.tris.filter(t => t.part === 'prop'), hinge:[hub, hub2], role:'prop' });
+    parts.push({ name:'disc', tris:full.tris.filter(t => t.part === 'disc'), hinge:[hub, hub2], role:'disc' });
     parts.forEach(p => p.tris.forEach(t => { if (!t.n) t.n = norm(cross(sub(t.p[1], t.p[0]), sub(t.p[2], t.p[0]))); }));
     return { parts, geometry:g, bounds:full.bounds };
   }

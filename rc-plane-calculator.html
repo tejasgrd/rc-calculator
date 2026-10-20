@@ -288,6 +288,7 @@
           <div class="field"><label for="d-cg">CG (% of MAC)</label><input id="d-cg" type="number" step="any" min="0" max="100" data-diag-num="cg"></div>
           <div class="field"><label for="d-motor">Motor position</label><select id="d-motor"><option value="tractor">Nose tractor</option><option value="pusher">Rear pusher</option></select></div>
           <div class="field"><label for="d-mount">Wing mount</label><select id="d-mount"><option value="high">High wing</option><option value="mid">Mid wing</option><option value="low">Low wing</option></select></div>
+          <div class="field"><label for="d-proprot">Prop spins (seen from behind)</label><select id="d-proprot"><option value="cw">Clockwise (standard)</option><option value="ccw">Anti-clockwise</option></select></div>
         </div>
         <p class="hint">Set the H-tail span to 0 for a tailless design. The prop disc uses the calculator's prop (entered or suggested). The ailerons drawn follow the calculator's control setup.</p>
       </form>
@@ -296,6 +297,7 @@
           <div id="diagram-holder"></div>
         </div>
         <div class="chips" id="chips" aria-live="polite" aria-label="Sanity checks"></div>
+        <div class="card" id="mount-card" style="margin-top:10px"><h3 style="margin-top:0">Motor mount (thrust angles) <a class="help" href="#learn-thrustline" aria-label="Learn about thrust angles">?</a></h3><div id="mount-out" class="readout" aria-live="polite"></div></div>
         <p class="readout" id="diag-readout"></p>
         <div class="actions no-print">
           <button type="button" class="btn" id="d-svg"><span class="ico"><svg aria-hidden="true"><use href="#i-download"/></svg></span>Download SVG</button>
@@ -437,6 +439,20 @@
         <button type="button" class="btn" data-example="worked">Load this example into the calculator</button>
       </div></details>
 
+      <details class="lcard" id="learn-thrustline"><summary><span class="num">16</span><b>Motor mount: down-thrust, right-thrust and prop rotation</b></summary><div class="lbody">
+        <p>When you open the throttle, the motor does more than push the plane forward:</p>
+        <ul>
+          <li><b>Thrust line height.</b> If the thrust line is below the balance point (common on high-wing trainers), power pitches the nose up; above it (many pushers and low wings), down.</li>
+          <li><b>Prop wash on the tail.</b> The fast air behind the prop changes the tailplane's load, so the pitch trim changes with power.</li>
+          <li><b>Spiral slipstream.</b> The wash also rotates with the prop. On a normal (clockwise from behind) prop it hits the left side of the fin and yaws the nose left.</li>
+          <li><b>Torque.</b> The airframe tries to spin the opposite way to the prop: a clockwise prop rolls the plane left. Thrust angles can&rsquo;t fix this; a touch of aileron trim does.</li>
+          <li><b>P-factor.</b> At high angles of attack the descending blade bites harder and pulls the nose to one side (small on fast-spinning electric props).</li>
+        </ul>
+        <p>Tilting the motor cancels most of it: <b>down-thrust</b> points the thrust a few degrees below the fuselage line; <b>right-thrust</b> points it towards the right wing. Typical tractor values are 1&ndash;4&deg; down and 1&ndash;3&deg; right. On a <b>pusher</b> the same correction is made by moving the prop end of the motor the other way (for example, &ldquo;up-thrust&rdquo; with the prop end lower).</p>
+        <p>The Designer, this calculator and the Build page work out angles for your exact layout with the simulator&rsquo;s physics (they make the plane&rsquo;s reaction to full power match an ideal airframe), and the Build page gives the washer thickness to shim a standard motor mount. In the simulator you can switch these motor effects on or off and compare.</p>
+        <div class="example"><b>Example:</b> a 1 m high-wing trainer with the thrust line 3 cm below the balance point balloons up when you open the throttle. About 3&deg; of down-thrust and 2&ndash;3&deg; of right-thrust lets it climb straight on full power without you holding down-elevator and right rudder.</div>
+      </div></details>
+
       <details class="lcard glossary" id="glossary"><summary><span class="num">A&ndash;Z</span><b>Glossary</b></summary><div class="lbody">
         <dl>
           <dt>AUW</dt><dd>All-up weight: everything that flies, including the battery.</dd>
@@ -499,6 +515,9 @@
 <script src="assets/rc-common.js"></script>
 <script src="assets/rc-core.js"></script>
 <script src="assets/rc-diagram.js"></script>
+<script src="assets/rc-aero.js"></script>
+<script src="assets/rc-sim-model.js"></script>
+<script src="assets/rc-sim-physics.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -785,7 +804,7 @@ function syncDiagInputs(force){
   const act = force ? null : document.activeElement, d = state.diagram, u = state.units.diagram;
   $$('[data-diag]').forEach(el => { if (el === act) return; el.value = String(+fromSI('length', u, d[el.dataset.diag]).toPrecision(4)); el.removeAttribute('aria-invalid'); });
   $$('[data-diag-num]').forEach(el => { if (el === act) return; el.value = String(+(+d[el.dataset.diagNum]).toPrecision(4)); el.removeAttribute('aria-invalid'); });
-  $('#d-preset').value = d.preset; $('#d-motor').value = d.motorPos; $('#d-mount').value = d.wingMount;
+  $('#d-preset').value = d.preset; $('#d-motor').value = d.motorPos; $('#d-mount').value = d.wingMount; $('#d-proprot').value = d.propRot === 'ccw' ? 'ccw' : 'cw';
   $('#d-unit').value = u; $('#d-link').checked = state.diagLink;
   $('#d-span').readOnly = state.diagLink; $('#d-rootChord').readOnly = state.diagLink;
   $('#d-tailArm').disabled = !(d.hSpan > 0 && d.hChord > 0);
@@ -801,10 +820,36 @@ function diagramColors(){
   return { paper:v('--d-paper'), grid:v('--d-grid'), gridMajor:v('--d-grid-major'), ink:v('--d-ink'), fill:v('--d-fill'), accent:v('--d-accent'), cg:v('--d-cg'), band:v('--d-band'), dim:v('--d-dim') };
 }
 let lastSVG = '';
+let mountT = null, mountKeyLast = '', mountRes = null;
+const STYLE_MISSION = { trainer:'trainer', sport:'sport', aerobatic:'aerobatic', glider:'glider' };
+/** Same suggestion as the Designer and simulator, for the calculator's airframe + power system. */
+function calcMountDesign(){
+  const inp = lastInp, R = lastR; if (!inp || !R) return null;
+  const d = Object.assign({}, state.diagram, { thrustDown:0, thrustRight:0, propRot:state.diagram.propRot === 'ccw' ? 'ccw' : 'cw', washout:state.diagram.washout || 0 });
+  const motor = { id:'calc', name:'Calculator motor', kv:R.kv, rm:0.15, io:0.5, maxA:R.P / (inp.cells * 3.5) * 2, maxW:R.P * 2, mass:Phys.motorWeight(R.P), custom:true };
+  return { design:{ name:'Calculator design', req:{ mission:STYLE_MISSION[inp.style] || 'sport', material:'depron' }, airfoilId:d.preset === 'flyingwing' ? 'reflex' : 'clarky', customAirfoil:null, geom:d, auw:inp.auw_kg,
+    cells:inp.cells, capacity_mAh:inp.cap_Ah * 1000, power:{ motorId:'calc', cells:inp.cells, prop:{ d:R.prop.d, p:R.prop.p } } }, customMotors:[motor] };
+}
+function updateMount(){
+  const out = $('#mount-out'); if (!out || typeof SimModel === 'undefined') return;
+  const md = calcMountDesign(); if (!md) return;
+  const key = JSON.stringify(md);
+  if (key === mountKeyLast && mountRes) return renderMount();
+  out.innerHTML = '<span class="hint">Working out the motor mount angles…</span>'; clearTimeout(mountT);
+  mountT = setTimeout(() => { mountKeyLast = key; try { mountRes = SimModel.suggestThrustAngles(md.design, { customMotors:md.customMotors }); } catch (e) { mountRes = { err:e.message }; } renderMount(); }, 600);
+}
+function renderMount(){
+  const out = $('#mount-out'), r = mountRes; if (!r) return;
+  if (r.err) { out.textContent = 'Could not work out mount angles: ' + r.err; return; }
+  out.innerHTML = `<p style="margin:0 0 6px">Suggested: <b>${esc(SimModel.describeThrust(r.down, r.right, r.pusher))}</b></p>
+    <p class="hint" style="margin:0 0 6px">With a straight mount, opening the throttle swings the nose about ${fmt(r.swing0, 1)}°/s; with this mount ${fmt(r.swing, 1)}°/s (${Math.round(r.improvement * 100)}% calmer).${r.why.length ? ' Why: ' + esc(r.why.join('; ')) + '.' : ''}</p>
+    ${r.improvement < 0.25 ? '<p class="hint" style="margin:0">On this layout tilting the motor makes little difference: a straight mount is fine.</p>' : ''}
+    <p class="hint" style="margin:0">Fine-tune it in the <a href="designer.html">Designer</a> (step 3) and try it in the <a href="simulator.html">Simulator</a>.</p>`;
+}
 function updateDiagram(){
   const d = state.diagram, propD_m = lastR ? lastR.prop.d * 0.0254 : 0.2;
   const surf = (CONTROLS[state.controls] || CONTROLS.re).surf;
-  lastSVG = buildAirframeSVG(d, { propD_m, colors:diagramColors(), unit:state.units.diagram, surf, flaps:state.flaps });
+  lastSVG = buildAirframeSVG(d, { propD_m, colors:diagramColors(), unit:state.units.diagram, surf, flaps:state.flaps }); updateMount();
   const holder = $('#diagram-holder'); holder.innerHTML = lastSVG;
   const svg = holder.querySelector('svg'); svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('class', 'diagram-svg');
   const g = airframeGeometry(d, propD_m);
@@ -831,6 +876,7 @@ function onDiagInput(e){
     el.removeAttribute('aria-invalid'); d[k] = p.v;
   } else if (el.id === 'd-preset') { autoProp(el.value); return; }
   else if (el.id === 'd-motor') d.motorPos = el.value;
+  else if (el.id === 'd-proprot') d.propRot = el.value;
   else if (el.id === 'd-mount') d.wingMount = el.value;
   else if (el.id === 'd-unit') { state.units.diagram = el.value; syncDiagInputs(true); }
   else if (el.id === 'd-link') { state.diagLink = el.checked; if (state.diagLink && lastInp) applyLink(lastInp); syncDiagInputs(); }

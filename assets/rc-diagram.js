@@ -114,6 +114,11 @@ function buildAirframeSVG(d, opts){
   top.poly([[-g.mdia/2, motorX0], [g.mdia/2, motorX0], [g.mdia/2, motorX0 + g.mlen], [-g.mdia/2, motorX0 + g.mlen]], { fill:C.ink, stroke:C.ink, 'stroke-width':1, opacity:.85 });
   top.ellipse([0, g.propX], D / 2, D * 0.035, { fill:C.band, stroke:C.accent, 'stroke-width':1.2, 'stroke-dasharray':'5 3' });
   top.line([-D / 2, g.propX], [D / 2, g.propX], { stroke:C.ink, 'stroke-width':3, 'stroke-linecap':'round' });
+  const tDn = +d.thrustDown || 0, tRt = +d.thrustRight || 0, tLen = 0.3 * Lf, thrStyle = { stroke:C.cg, 'stroke-width':1.6, 'stroke-dasharray':'6 3' };
+  const arrow = (view, p, dir, label) => { const q = [p[0] + dir[0] * tLen, p[1] + dir[1] * tLen], n = [-dir[1], dir[0]], h = tLen * 0.08;
+    view.line(p, q, thrStyle); view.poly([q, [q[0] - dir[0] * h + n[0] * h * 0.5, q[1] - dir[1] * h + n[1] * h * 0.5], [q[0] - dir[0] * h - n[0] * h * 0.5, q[1] - dir[1] * h - n[1] * h * 0.5]], { fill:C.cg, stroke:C.cg });
+    view.text(q, label, { dx:6, dy:-6, fill:C.cg, weight:700, size:11 }); };
+  if (Math.abs(tRt) >= 0.25) arrow(top, [0, g.propX], [Math.sin(tRt * Math.PI / 180), -Math.cos(tRt * Math.PI / 180)], `thrust ${fmt(Math.abs(tRt), 1)}° ${tRt > 0 ? 'right' : 'left'}`);
   // CG band, MAC, CG
   const bw = Math.max(fw * 1.4, b * 0.09);
   top.poly([[-bw, g.band[0]], [bw, g.band[0]], [bw, g.band[1]], [-bw, g.band[1]]], { fill:C.band, stroke:C.accent, 'stroke-width':.8, 'stroke-dasharray':'3 2' });
@@ -149,6 +154,7 @@ function buildAirframeSVG(d, opts){
   side.poly([[motorX0, g.propZ + g.mdia / 2], [motorX0 + g.mlen, g.propZ + g.mdia / 2], [motorX0 + g.mlen, g.propZ - g.mdia / 2], [motorX0, g.propZ - g.mdia / 2]].map(p => Sx(...p)), { fill:C.ink, stroke:C.ink, 'stroke-width':1, opacity:.85 });
   side.ellipse(Sx(g.propX, g.propZ), D * 0.035, D / 2, { fill:C.band, stroke:C.accent, 'stroke-width':1.2, 'stroke-dasharray':'5 3' });
   side.line(Sx(g.propX, g.propZ - D / 2), Sx(g.propX, g.propZ + D / 2), { stroke:C.ink, 'stroke-width':3, 'stroke-linecap':'round' });
+  if (Math.abs(tDn) >= 0.25) arrow(side, Sx(g.propX, g.propZ), [-Math.cos(tDn * Math.PI / 180), Math.sin(tDn * Math.PI / 180)], `thrust ${fmt(Math.abs(tDn), 1)}° ${tDn > 0 ? 'down' : 'up'}`);
   const sp = d.motorPos === 'pusher' ? 1 : -1;
   side.poly([[g.propX, g.propZ + D * .05], [g.propX + sp * D * .08, g.propZ], [g.propX, g.propZ - D * .05]].map(p => Sx(...p)), { fill:C.ink, stroke:C.ink });
   const bh = Math.max(hf * 0.9, cr * 0.25);

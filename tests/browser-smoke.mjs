@@ -56,6 +56,11 @@ results.designer.asbuilt = await ev(`(async()=>{const set=(id,v)=>{const e=docum
   set('#s-ailcf',35); set('#s-flaps',true); await new Promise(r=>setTimeout(r,400)); const surf=JSON.stringify(RCDesigner.design.geom.surfaces);
   const cg0=RCDesigner.analysis.stab.cg; set('#mb-cg',60); set('#mb-auw',300); set('#mb-use',true); await new Promise(r=>setTimeout(r,500));
   return { surf, ail:RCDesigner.design.geom.surfaces.ailCf, flaps:RCDesigner.design.geom.surfaces.flaps, cg0, cg1:RCDesigner.analysis.stab.cg, auw:RCDesigner.analysis.inp.auw_kg, out:document.querySelector('#mb-out').textContent.slice(0,160) }; })()`);
+results.designer.mount = await ev(`(async()=>{const wait=ms=>new Promise(r=>setTimeout(r,ms));const set=(id,v)=>{const e=document.querySelector(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));};
+  set('#m-down','0');set('#m-right','0');for(let k=0;k<40&&!document.querySelector('#mount-use');k++)await wait(200);const txt=document.querySelector('#mount-suggest').innerText.slice(0,300);
+  document.querySelector('#mount-use')&&document.querySelector('#mount-use').click();await wait(400);const g=RCDesigner.design.geom;
+  return {txt,down:g.thrustDown,right:g.thrustRight,inUse:!!document.querySelector('#mount-suggest .tag'),arrows:[...document.querySelectorAll('#g-diagram text')].filter(t=>/thrust/.test(t.textContent)).map(t=>t.textContent)};})()`);
+await scrollTo('#mount-box'); await shot('designer-mount');
 results.designer.air = await ev(`(async()=>{const set=(id,v)=>{const e=document.querySelector(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));};const a0=RCDesigner.analysis;const v0=a0.pf.vs,r0=a0.rho;
   set('#p-temp','35');set('#p-elev','2000');await new Promise(r=>setTimeout(r,500));const a1=RCDesigner.analysis,out={r0,v0,r1:a1.rho,v1:a1.pf.vs,roc0:a0.pf.rocMax,roc1:a1.pf.rocMax,txt:document.querySelector('#p-air').textContent};
   set('#p-temp','15');set('#p-elev','0');await new Promise(r=>setTimeout(r,400));out.back=RCDesigner.analysis.rho;return out;})()`);

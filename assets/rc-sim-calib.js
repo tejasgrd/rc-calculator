@@ -215,7 +215,7 @@ const SimCalib = (() => {
     }
     if (m.hasAttitude && m.hasSticks) runs(R, r => air(r) && Math.abs(r.ail) > 0.8 && isFinite(r.p), 0.6).forEach(([a, b]) => { const s = R.slice(a, b + 1);
       const ok = s.filter(r => Math.abs(r.pitch) < 50).map(r => Math.abs(r.p)).sort((x, y) => x - y), turned = ok.reduce((acc, v) => acc + v * 0.1, 0); if (turned < 60 || ok.length < 5) return;
-      const p80 = ok[Math.floor(ok.length * 0.8)]; segs.push({ ...battery(s), V0:R[a].asEst, thr:m.hasThrottle ? mean(s, 'thr') : null, type:'roll', t0:R[a].t, t1:R[b].t, V:mean(s, 'asEst'), p:p80, ail:mean(s.map(r => ({ v:Math.abs(r.ail) })), 'v') }); });
+      const p80 = ok[Math.floor(ok.length * 0.8)]; segs.push({ ...battery(s), V0:R[a].asEst, phi0:isFinite(R[a].roll) ? R[a].roll : 0, theta0:isFinite(R[a].pitch) ? R[a].pitch : null, thr:m.hasThrottle ? mean(s, 'thr') : null, type:'roll', t0:R[a].t, t1:R[b].t, V:mean(s, 'asEst'), p:p80, ail:mean(s.map(r => ({ v:Math.abs(r.ail) })), 'v'), dir:Math.sign(mean(s.map(r => ({ v:r.ail != null ? r.ail : (r.p || 0) })), 'v')) || 1, rud:m.hasSticks ? mean(s.map(r => ({ v:r.rud || 0 })), 'v') : 0 }); });
     return segs.sort((a, b) => a.t0 - b.t0);
   }
   /** Manual measurements (no logger): { stall_ms, top_ms, climb_ms, cruise:{ V, thr, A }, glide:{ V, LD } } → segments */
@@ -268,10 +268,10 @@ const SimCalib = (() => {
     const CL = best / (q * model.Sref); return Math.sqrt(2 * model.mass * G / (r0 * model.Sref * CL));
   }
   /** Roll rate the way it is measured in a log: a short simulated full-aileron roll from level flight (includes sideslip and dihedral effects). */
-  function rollRateDynamic(model, V, ail = 1, dur = 1.6, soc = 0.85, thr = null){
+  function rollRateDynamic(model, V, ail = 1, dur = 1.6, soc = 0.85, thr = null, phi0 = 0, theta0 = null, rud = 0){
     const lv = steady(model, V, { level:true, soc }), st = { alpha:lv.alpha, gamma:0, thr:thr != null ? thr : lv.thr }, env = new SimPhysics.Environment({ speed:0, rhoFixed:model.rho || RHO_SL }), sim = new SimPhysics.Sim(model, { env });
-    sim.reset('air', { alt:80 }); sim.s.q = SimPhysics.quat.fromEuler(0, st.alpha + st.gamma, 0); sim.s.v = [V * Math.cos(st.gamma), 0, -V * Math.sin(st.gamma)]; sim.s.spool = st.thr; sim.s.soc = soc; const ps = []; let prev = null;
-    for (let k = 0; k * 6 < dur * 60; k++) { for (let j = 0; j < 6; j++) sim.step(1 / 60, { ail, ele:0, rud:0, thr:st.thr, flap:0 }); const e = SimPhysics.quat.toEuler(sim.s.q);
+    sim.reset('air', { alt:80 }); sim.s.q = SimPhysics.quat.fromEuler(phi0 * DEG, theta0 != null ? theta0 * DEG : st.alpha + st.gamma, 0); sim.s.v = [V * Math.cos(st.gamma), 0, -V * Math.sin(st.gamma)]; sim.s.spool = st.thr; sim.s.soc = soc; const ps = []; let prev = null;
+    for (let k = 0; k * 6 < dur * 60; k++) { for (let j = 0; j < 6; j++) sim.step(1 / 60, { ail, ele:0, rud, thr:st.thr, flap:0 }); const e = SimPhysics.quat.toEuler(sim.s.q);
       if (prev != null && Math.abs(e.theta) < 50 * DEG) { let d = e.phi - prev; if (Math.abs(d) > Math.PI) d -= 2 * Math.PI * Math.sign(d); ps.push(Math.abs(d) / 0.1 / DEG); } prev = e.phi; } // Euler roll rate at 10 Hz, like the log
     ps.sort((a, b) => a - b); return ps.length ? ps[Math.floor(ps.length * 0.8)] : 0;
   }
@@ -288,7 +288,7 @@ const SimCalib = (() => {
     if (seg.type === 'glide') { const s = steady(model, V, { thr:0, motorOff:true, soc }); return { LD:-1 / Math.tan(s.gamma), vs:s.vs }; }
     if (seg.type === 'topspeed') return { V:topSpeed(model, null, soc) };
     if (seg.type === 'stall') return { V:stallSpeed(model) };
-    if (seg.type === 'roll') return { p:rollRateDynamic(model, seg.V0 || V, seg.ail || 1, Math.min(2.5, Math.max(0.8, (seg.t1 - seg.t0) || 1.6)), soc, seg.thr) };
+    if (seg.type === 'roll') return { p:rollRateDynamic(model, seg.V0 || V, (seg.dir || 1) * (seg.ail || 1), Math.min(2.5, Math.max(0.8, (seg.t1 - seg.t0) || 1.6)), soc, seg.thr, seg.phi0 || 0, seg.theta0, seg.rud || 0) };
     if (seg.type === 'endurance') { const s = steady(model, model.trim.V, { level:true, soc:0.6 }); const k = seg.thr / Math.max(0.05, s.thr), I = s.I * k * k; return { min:model.capacity_mAh / 1000 * 0.8 / Math.max(0.05, I) * 60 }; }
     return {};
   }

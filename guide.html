@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Build guide &amp; encyclopedia · RC Calc</title>
+<link rel="icon" href="data:,">
+<script>try{var t=localStorage.getItem('rcCalc.theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="stylesheet" href="assets/rc-style.css">
+</head>
+<body class="viz-root">
+<a class="skip" href="#main">Skip to the guide</a>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="rc-plane-calculator.html" aria-label="RC Calc home"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span>RC Calc<small>Build guide</small></span></a>
+    <nav class="nav" aria-label="Pages">
+      <a href="rc-plane-calculator.html#calculator">Calculator</a>
+      <a href="rc-plane-calculator.html#learn">Learn</a>
+      <a href="guide.html" class="active" aria-current="page">Guide</a>
+      <a href="designer.html">Designer</a>
+      <a href="build.html">Build</a>
+      <a href="simulator.html">Simulator</a>
+    </nav>
+    <div class="tools">
+      <div class="seg" role="radiogroup" aria-label="Unit system">
+        <input type="radio" name="unitSystem" id="us-metric" value="metric"><label for="us-metric">Metric</label>
+        <input type="radio" name="unitSystem" id="us-imperial" value="imperial"><label for="us-imperial">Imperial</label>
+      </div>
+      <button type="button" class="btn icon-only" id="theme-toggle" aria-pressed="false" aria-label="Use dark theme"><span class="ico"><svg aria-hidden="true"><use href="#i-moon"/></svg></span></button>
+    </div>
+  </div>
+</header>
+<nav class="subnav" aria-label="Guide parts"><div class="wrap"><a href="#fundamentals">1 Fundamentals</a><a href="#ex-trainer">2 Example: trainer</a><a href="#ex-wing">3 Example: flying wing</a><a href="#glossary">4 Glossary A–Z</a></div></nav>
+
+<main id="main">
+<section class="page" style="padding-bottom:0">
+  <div class="wrap">
+    <div class="section-head hero"><div>
+      <div class="eyebrow">Guide</div>
+      <h1>How to design and build an RC plane</h1>
+      <p class="lede">An encyclopedia you can play with. Part 1 explains every fundamental (materials, aerodynamics, stability, motors, props, batteries, radio, weight and balance) with live widgets. Parts 2 and 3 then design and build two real Depron planes, a high-wing trainer and a flying wing, step by step with this site's own tools, explaining each concept the moment it comes up.</p>
+    </div></div>
+    <div class="g-toc" id="g-toc" aria-label="Chapters"></div>
+  </div>
+</section>
+
+<!-- ===================== PART 1 ===================== -->
+<section class="dsec" id="fundamentals" aria-labelledby="h-fund">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-fund"><span class="step-num">1</span>Fundamentals</h2><p class="lede">Read in order the first time; every chapter builds on the one before. The sliders use the same formulas as the calculator and Designer.</p></div>
+
+    <article class="g-ch" id="ch-materials" data-title="Materials" data-icon="layers">
+      <h3>1.1 Materials: what planes are made of</h3>
+      <p>Small electric planes are built from <b>foam sheet</b>, <b>balsa</b>, or both. The choice decides how heavy the plane is, how quickly you can build it and how well it survives a bad landing.</p>
+      <div class="g-grid2">
+        <div>
+          <ul class="g-list">
+            <li><b>Depron / XPS foam sheet (3 and 6 mm).</b> Light (about 40 kg/m³), smooth, cuts with a sharp knife, glues with foam-safe CA, hot glue or UHU Por. The classic material for park flyers and this guide's examples.</li>
+            <li><b>Foam board (paper-faced, 5 mm).</b> Cheap (craft stores), stiff because of the paper skins, can be scored and folded into a real airfoil. About 50 % heavier than Depron.</li>
+            <li><b>EPP foam.</b> Rubbery and almost indestructible (combat wings, trainers for kids), but floppy, so it needs carbon spars.</li>
+            <li><b>Balsa.</b> The lightest structure for its strength when built as ribs and spars, then covered with film. Slower to build; gives true airfoils.</li>
+            <li><b>Carbon rod or strip.</b> A 1–3 mm carbon spar in a foam wing stops it bending and fluttering for very little weight.</li>
+            <li><b>Plywood (1.5–3 mm).</b> Firewalls, motor mounts and wing joiners: anywhere screws or loads go.</li>
+            <li><b>Glue and tape.</b> Foam-safe CA (normal CA melts foam), hot glue (strong but heavy), UHU Por/contact glue, packing tape for hinges and reinforcement.</li>
+          </ul>
+        </div>
+        <div class="widget" id="w-material" aria-label="Wing weight by material"></div>
+      </div>
+      <div class="concept"><b>Concept: weight per area.</b> Sheet materials are compared by grams per square decimetre of wing (g/dm²). A wing's weight is roughly its area × this number, and every gram of structure must be carried by the wing: it raises the wing loading and the stall speed.</div>
+      <div class="practical"><b>In practice:</b> a sharp snap-off blade, a steel ruler, a cutting mat, sandpaper on a block, pins, foam-safe CA with activator and a hot-glue gun are all the tools you need for this guide's planes.</div>
+    </article>
+
+    <article class="g-ch" id="ch-forces" data-title="How a plane flies" data-icon="wing">
+      <h3>1.2 How a plane flies: the four forces</h3>
+      <p>In steady flight four forces balance: <b>lift</b> (up, from the wing) equals <b>weight</b> (down), and <b>thrust</b> (forward, from the prop) equals <b>drag</b> (back, air resistance). More thrust than drag means the plane speeds up or climbs; less means it slows or descends.</p>
+      <p>The wing makes lift by deflecting air downwards. How much depends on the air density ρ, the airspeed V, the wing area S and the <b>lift coefficient</b> C<sub>L</sub>, which grows with the angle of attack until the wing stalls:</p>
+      <pre class="formula">Lift = ½ · ρ · V² · S · C<sub>L</sub></pre>
+      <p>Lift grows with the <em>square</em> of speed: flying twice as fast gives four times the lift at the same angle. That is why a heavy plane simply needs to fly faster, and why there is a slowest speed (the <b>stall speed</b>) at which even the maximum C<sub>L</sub> can no longer hold the weight.</p>
+      <div class="widget" id="w-lift" aria-label="Lift equation explorer"></div>
+      <div class="concept"><b>Concept: stall.</b> Beyond about 12–15° angle of attack the air can no longer follow the top of the wing; it separates, lift drops and drag rises. A stall is about angle, not speed: you can stall at any speed by pulling too hard, but in level flight it happens at the stall speed.</div>
+    </article>
+
+    <article class="g-ch" id="ch-design" data-title="The design process" data-icon="magic">
+      <h3>1.3 Designing a plane: the process</h3>
+      <p>Designing is a loop, because everything depends on weight and the weight depends on everything. The Designer automates this loop; here is what it does, step by step:</p>
+      <ol class="g-steps">
+        <li><b>Requirements.</b> What is it for (trainer, sport, glider, wing), how big may it be, how slowly should it land, how long should it fly, what material?</li>
+        <li><b>Guess the weight</b> from typical structures and electronics for that size.</li>
+        <li><b>Size the wing</b> so the stall speed meets your target at that weight (wing loading), then choose span and chord from the aspect ratio.</li>
+        <li><b>Size the tail and fuselage</b> from rules that give enough stability (tail volume) and a good tail arm.</li>
+        <li><b>Choose the power system</b> for the style: watts per kilogram → motor, prop, battery, ESC.</li>
+        <li><b>Recompute the weight</b> with the real parts. If it changed, repeat from step 3 until it settles (usually 3–6 rounds).</li>
+        <li><b>Check</b> stability (CG, neutral point, static margin), performance (climb, top speed, flight time) and the wing's stall behaviour.</li>
+        <li><b>Build, balance, fly, measure</b>, and feed the real weight and flight logs back in.</li>
+      </ol>
+      <div class="widget" id="w-loop" aria-label="Design loop diagram"></div>
+    </article>
+
+    <article class="g-ch" id="ch-wing" data-title="Wing & airfoil" data-icon="airfoil">
+      <h3>1.4 The wing: size, shape and airfoil</h3>
+      <p>The wing's <b>area</b> sets how slowly it can fly; its <b>shape</b> sets how efficiently and how gently. Play with the planform below and watch the numbers that matter:</p>
+      <ul class="g-list">
+        <li><b>Wing loading</b> (weight ÷ area) is the best single predictor of how a plane flies. Under 20 g/dm² is floaty and easy; 30–50 g/dm² is sporty and needs faster landings.</li>
+        <li><b>Aspect ratio</b> (span² ÷ area): long slender wings (high AR) glide better because the tip vortices waste less energy (lower <em>induced drag</em>); short wings roll faster and are stronger.</li>
+        <li><b>Taper</b> (tip chord ÷ root chord) close to 0.45 gives a near-ideal lift distribution, but very small tips stall first; <b>washout</b> (tip twisted nose-down) fixes that.</li>
+        <li><b>Sweep</b> moves the lift backwards and is what lets a flying wing be stable without a tail.</li>
+        <li><b>Dihedral</b> (wings angled up) makes the plane level itself after a bank. Rudder-only planes need lots; aileron planes need little.</li>
+        <li><b>MAC</b> (mean aerodynamic chord) is the "average" chord on which the balance point is measured.</li>
+      </ul>
+      <div class="widget" id="w-wing" aria-label="Wing planform and airfoil explorer"></div>
+      <div class="concept"><b>Concept: airfoils.</b> A curved (cambered) section makes lift even at zero angle and reaches a higher maximum lift, which is ideal for slow trainers (Clark Y). A symmetric section flies the same upside-down (aerobats, tails). A reflexed section, with its trailing edge turned up, is stable on its own and is needed by flying wings. On a Depron plane the "airfoil" is often a <b>KFm step</b> (a second layer glued on the front half) or a sheet bent over a spar.</div>
+    </article>
+
+    <article class="g-ch" id="ch-stability" data-title="Stability & CG" data-icon="target">
+      <h3>1.5 Stability, the tail and the balance point (CG)</h3>
+      <p>A plane is stable in pitch when, after a gust pushes the nose up, it returns by itself. This works like a weathervane or a dart: the <b>centre of gravity (CG)</b> must be ahead of the <b>neutral point (NP)</b>, the aerodynamic centre of the whole plane. The tail (or sweep and reflex on a wing) moves the NP back.</p>
+      <ul class="g-list">
+        <li><b>Static margin</b> = distance from CG to NP, as % of the MAC. 10–15 % is calm and forgiving; under 5 % is twitchy; behind the NP the plane is uncontrollable.</li>
+        <li><b>Tail volume</b> (tail area × tail arm ÷ wing area × MAC) measures how strong the tail is. Trainers use about 0.5.</li>
+        <li><b>Too far forward</b> (nose-heavy): very stable, but the elevator can't lift the nose to flare, and the plane needs more speed. <b>Too far back</b> (tail-heavy): pitch-sensitive, then unstable. Always err forward for a first flight.</li>
+      </ul>
+      <div class="widget" id="w-cg" aria-label="CG and static margin explorer"></div>
+      <div class="concept"><b>Concept: lateral and spiral stability.</b> Dihedral and a high wing make a banked plane slip towards the low wing and roll back level. The fin keeps the nose pointing into the airflow. Too much fin compared with dihedral makes the plane slowly tighten into a spiral; the spiral index B (≥ 5) checks the balance.</div>
+    </article>
+
+    <article class="g-ch" id="ch-controls" data-title="Control surfaces" data-icon="servo">
+      <h3>1.6 Control surfaces, throws and mixing</h3>
+      <p>Hinged surfaces bend the airflow to turn the plane about its three axes: <b>ailerons</b> roll it, the <b>elevator</b> pitches it, the <b>rudder</b> yaws it. Flaps (both down together) add lift and drag for slow landings. A flying wing combines ailerons and elevator into <b>elevons</b>, mixed in the transmitter.</p>
+      <div class="widget" id="w-controls" aria-label="Control surfaces and elevon mixing"></div>
+      <div class="concept"><b>Concept: throw, expo and rates.</b> <em>Throw</em> is how far a surface moves at full stick (trainers about ±12–15°). <em>Expo</em> softens the centre of the stick so small corrections are gentle. <em>Dual rates</em> switch between low throws (first flights) and high (aerobatics). Always check that the surfaces move the right way before every first flight.</div>
+    </article>
+
+    <article class="g-ch" id="ch-power" data-title="Motor & prop" data-icon="motor">
+      <h3>1.7 Motors and props: choosing the power system</h3>
+      <p>The power system is sized from the <b>watts per kilogram</b> your flying style needs: about 100–150 W/kg for a gentle trainer, 150–250 for sport, 250+ for aerobatics. Then the motor, prop and battery are chosen to deliver that power together.</p>
+      <ul class="g-list">
+        <li><b>Brushless outrunner motors</b> are named by stator size (a 2204 has a 22 mm × 4 mm stator) and <b>KV</b>, the RPM per volt with no load. Low KV swings big props for thrust; high KV spins small props for speed.</li>
+        <li><b>Props</b> are named diameter × pitch in inches (7×3.5). The power a prop absorbs grows with RPM³ × diameter⁵, so a one-inch bigger prop can overload a motor. Diameter mostly makes thrust; pitch makes speed.</li>
+        <li><b>Pitch speed</b> (RPM × pitch) is the speed at which the prop stops pushing. Aim for 1.5–2 × cruise speed.</li>
+        <li><b>Thrust-to-weight</b>: 0.5–0.8 is enough for a trainer, about 1 for sport, 1.5+ to hang on the prop.</li>
+      </ul>
+      <div class="widget" id="w-power" aria-label="Motor and prop explorer"></div>
+      <div class="concept"><b>Concept: current is what kills parts.</b> Electrical power = volts × amps. The same motor on a bigger prop or one more cell draws much more current; the battery, ESC and motor must all be rated above it. Measure it on the bench with a watt meter before the first flight.</div>
+    </article>
+
+    <article class="g-ch" id="ch-battery" data-title="Battery & ESC" data-icon="battery">
+      <h3>1.8 Battery and speed controller (ESC)</h3>
+      <p>LiPo packs are described by <b>cells (S)</b>, <b>capacity (mAh)</b> and <b>C rating</b>. Each cell is 3.7 V nominal (4.2 V full, never below 3.3 V under load). A 2S 350 mAh 25C pack is 7.4 V, stores 2.6 Wh and can safely deliver 350 mA × 25 = 8.75 A.</p>
+      <div class="widget" id="w-battery" aria-label="Battery explorer"></div>
+      <div class="concept"><b>Concept: the ESC and BEC.</b> The ESC turns the throttle signal into three-phase drive for the motor. Choose one rated 30–50 % above the full-throttle current. Most small ESCs have a <b>BEC</b> that makes 5 V for the receiver and servos, so no separate receiver battery is needed. If the motor spins the wrong way, swap any two of the three motor wires.</div>
+      <div class="practical"><b>Safety:</b> charge LiPos with a balance charger on a non-flammable surface, never unattended; never puncture, short or over-discharge them; store them at about 3.8 V per cell.</div>
+    </article>
+
+    <article class="g-ch" id="ch-radio" data-title="Radio & servos" data-icon="antenna">
+      <h3>1.9 Radio, receiver and servos</h3>
+      <ul class="g-list">
+        <li><b>Transmitter</b> (for example a FlySky FS-i6): sticks, switches, model memories, trims, expo, rates and mixing. <b>Mode 2</b> puts throttle and rudder on the left stick, elevator and ailerons on the right.</li>
+        <li><b>Receiver</b>: bound to your transmitter; needs one channel per function (throttle, aileron, elevator, rudder…). A 4–6 channel receiver covers these planes.</li>
+        <li><b>Servos</b>: micro servos (4–9 g) move the surfaces through pushrods (steel wire or carbon) and control horns. The pushrod should be straight and the horn's hole lined up over the hinge line.</li>
+        <li><b>Failsafe</b>: set it so the motor stops if the signal is lost. Do a range check before the first flight.</li>
+      </ul>
+      <div class="concept"><b>Concept: channels and mixing.</b> A 3-channel trainer (throttle, elevator, rudder) turns with the rudder thanks to its dihedral. A 4-channel plane adds ailerons. A flying wing needs only throttle plus two elevons: the transmitter mixes your aileron and elevator sticks into the two servos (the "elevon" or "delta" mix).</div>
+    </article>
+
+    <article class="g-ch" id="ch-weight" data-title="Weight & balance" data-icon="weight">
+      <h3>1.10 Weight and balance</h3>
+      <p>Every part has a weight and a position. The CG is the weighted average of all positions, so the battery, the heaviest single part that can move, is used to set the balance. Slide it below and watch the CG of this guide's trainer:</p>
+      <div class="widget" id="w-balance" aria-label="Battery position and balance"></div>
+      <div class="practical"><b>How to balance:</b> mark the recommended CG under the wing on both sides, put the battery in, and lift the plane on two fingertips at the marks. It should hang level or slightly nose-down. Move the battery first; add nose weight only if the battery cannot go far enough.</div>
+    </article>
+
+    <article class="g-ch" id="ch-mount" data-title="Motor mount" data-icon="bolt">
+      <h3>1.11 The motor mount: thrust line, down- and right-thrust</h3>
+      <p>Opening the throttle does more than push the plane forward. If the thrust line is below the CG, power pitches the nose up; the prop wash changes the tail's load; the slipstream spirals and pushes the fin, swinging the nose left; motor torque rolls the plane the other way to the prop; and at high angles the prop pulls to one side (P-factor). A few degrees of <b>down-thrust</b> and <b>right-thrust</b> cancel most of it.</p>
+      <div class="widget" id="w-mount" aria-label="Motor mount power response"></div>
+      <div class="concept"><b>Concept: pushers are mirrored.</b> On a pusher the mount faces backwards, so the same correction moves the prop end the other way ("up-thrust": prop end lower). The Designer, calculator and Build page work out angles for your exact layout and give the washer thickness to set them.</div>
+    </article>
+
+    <article class="g-ch" id="ch-fly" data-title="First flight" data-icon="play">
+      <h3>1.12 Before and during the first flight</h3>
+      <ol class="g-steps">
+        <li><b>Balance</b> at the recommended CG, with the flight battery installed.</li>
+        <li><b>Control check</b>: right stick right = right aileron up; stick back = elevator up; left stick right = rudder right. Check throws with a ruler.</li>
+        <li><b>Failsafe and range check</b>: switch the transmitter off: the motor must stop. Walk 30 m away in range-check mode: everything must still respond.</li>
+        <li><b>Bench test</b> restrained, watching the current on a watt meter; check that nothing gets hot.</li>
+        <li><b>Glide test</b> (wings and gliders) over long grass: a firm, level throw. It should glide straight and gently down. Nose dives → move the CG back a little; stalls and dives → move it forward.</li>
+        <li><b>First flight</b>: take off or launch into the wind, climb to two mistakes high, trim it to fly straight and level hands-off, then land early with battery to spare.</li>
+      </ol>
+      <div class="practical"><b>Practise first:</b> the simulator has lessons (take-off, circuits, landing, crosswind, hand launch) and an instructor who takes over when you get into trouble. Both example planes below are built into it.</div>
+    </article>
+  </div>
+</section>
+
+<!-- ===================== PARTS 2 & 3: generated worked examples ===================== -->
+<section class="dsec" id="ex-trainer" aria-labelledby="h-ex-trainer">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-ex-trainer"><span class="step-num">2</span>Worked example: a 1.2 m Depron trainer</h2>
+      <p class="lede">A high-wing, tractor (nose motor) trainer with ailerons, built from 6 mm Depron. Every number below is produced live by this site's tools (the same pipeline as the Designer and the simulator's built-in trainer). Change the requirements to see the whole design update.</p></div>
+    <div id="ex-trainer-body"></div>
+  </div>
+</section>
+
+<section class="dsec" id="ex-wing" aria-labelledby="h-ex-wing">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-ex-wing"><span class="step-num">3</span>Worked example: a 0.9 m Depron flying wing</h2>
+      <p class="lede">A swept, tailless pusher with elevons and winglets, built from 6 mm Depron. Flying wings break several trainer rules (no tail, CG far forward, reflex airfoil, mixing), and each difference is explained as it comes up.</p></div>
+    <div id="ex-wing-body"></div>
+  </div>
+</section>
+
+<!-- ===================== PART 4 ===================== -->
+<section class="dsec" id="glossary" aria-labelledby="h-gl">
+  <div class="wrap">
+    <div class="section-head"><h2 id="h-gl"><span class="step-num">4</span>Glossary A–Z</h2><p class="lede">Every parameter used in the calculator, Designer, Build page and simulator. The same explanations appear when you hover an <span class="info-i" aria-hidden="true" style="cursor:default">i</span> anywhere on the site.</p></div>
+    <div class="panel" style="margin-bottom:14px"><div class="field" style="margin:0"><label for="gl-q">Search the glossary</label><input id="gl-q" type="text" inputmode="search" role="searchbox" placeholder="e.g. static margin, KV, washout" autocomplete="off"></div><p class="hint" id="gl-count" aria-live="polite"></p></div>
+    <div id="gl-list" class="g-gloss"></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap"><p>RC Calc Guide: the examples are generated by the same models as the calculator, Designer and simulator. They are good starting points, not guarantees: weigh your parts, balance carefully and test-glide before the first powered flight.</p></div></footer>
+
+<script src="assets/rc-common.js"></script>
+<script src="assets/rc-info.js"></script>
+<script src="assets/rc-core.js"></script>
+<script src="assets/rc-diagram.js"></script>
+<script src="assets/rc-aero.js"></script>
+<script src="assets/rc-templates.js"></script>
+<script src="assets/rc-sim-model.js"></script>
+<script src="assets/rc-sim-physics.js"></script>
+<script src="assets/guide.js"></script>
+</body>
+</html>

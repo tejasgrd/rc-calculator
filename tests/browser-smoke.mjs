@@ -61,6 +61,14 @@ results.designer.mount = await ev(`(async()=>{const wait=ms=>new Promise(r=>setT
   document.querySelector('#mount-use')&&document.querySelector('#mount-use').click();await wait(400);const g=RCDesigner.design.geom;
   return {txt,down:g.thrustDown,right:g.thrustRight,inUse:!!document.querySelector('#mount-suggest .tag'),arrows:[...document.querySelectorAll('#g-diagram text')].filter(t=>/thrust/.test(t.textContent)).map(t=>t.textContent)};})()`);
 await scrollTo('#mount-box'); await shot('designer-mount');
+results.designer.info = await ev(`(async()=>{const wait=ms=>new Promise(r=>setTimeout(r,ms));const tile=[...document.querySelectorAll('.stat .lbl')].find(l=>/^Neutral point/.test(l.textContent));const ic=tile&&tile.querySelector('.info-i');if(!ic)return {err:'no icon'};
+  ic.scrollIntoView({block:'center'});await wait(200);ic.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));await wait(100);const tip=document.querySelector('#rc-tip');const shown={visible:!tip.hidden,text:tip.innerText.slice(0,160),described:ic.getAttribute('aria-describedby')};
+  ic.dispatchEvent(new MouseEvent('mouseout',{bubbles:true}));await wait(50);shown.hiddenAfter=tip.hidden;
+  const cb=[...document.querySelectorAll('label.check')].find(l=>l.querySelector('.info-i')&&l.querySelector('input[type=checkbox]'));let toggled=null;if(cb){const inp=cb.querySelector('input'),before=inp.checked;cb.querySelector('.info-i').click();await wait(50);toggled=inp.checked!==before;}
+  await wait(300);return Object.assign(shown,{icons:document.querySelectorAll('.info-i').length,checkboxToggledByIcon:toggled,keys:[/^(Current CG|CG \\(as built\\))/,/^Neutral point/,/^Spiral index B/,/^Span efficiency e/,/^Cruise CL/].map(k=>[...document.querySelectorAll('.stat .lbl')].some(l=>k.test(l.textContent)&&l.querySelector('.info-i')))});})()`);
+{ await ev(`[...document.querySelectorAll('.stat .lbl')].find(l => /^Spiral index/.test(l.textContent)).scrollIntoView({ block:'center', behavior:'instant' })`); await new Promise(r => setTimeout(r, 900));
+  const ic = await ev(`(() => { const i = [...document.querySelectorAll('.stat .lbl')].find(l => /^Spiral index/.test(l.textContent)).querySelector('.info-i'), r = i.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+  await send('Input.dispatchMouseEvent', { type:'mouseMoved', x:ic[0], y:ic[1] }); await new Promise(r => setTimeout(r, 300)); await shot('designer-info-tooltip'); await send('Input.dispatchMouseEvent', { type:'mouseMoved', x:5, y:5 }); }
 results.designer.air = await ev(`(async()=>{const set=(id,v)=>{const e=document.querySelector(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));};const a0=RCDesigner.analysis;const v0=a0.pf.vs,r0=a0.rho;
   set('#p-temp','35');set('#p-elev','2000');await new Promise(r=>setTimeout(r,500));const a1=RCDesigner.analysis,out={r0,v0,r1:a1.rho,v1:a1.pf.vs,roc0:a0.pf.rocMax,roc1:a1.pf.rocMax,txt:document.querySelector('#p-air').textContent};
   set('#p-temp','15');set('#p-elev','0');await new Promise(r=>setTimeout(r,400));out.back=RCDesigner.analysis.rho;return out;})()`);
@@ -77,8 +85,24 @@ results.build.state = await ev(`(()=>({pages:document.querySelectorAll('#page-gr
 await shot('build-top'); await scrollTo('#b-pages'); await shot('build-pages'); await scrollTo('#b-bom'); await shot('build-bom');
 results.build.variants = await ev(`(async()=>{const out=[];for(const m of ['balsa','foam']){for(const p of ['a5','letter','a4']){document.querySelector('#bo-method').value=m;document.querySelector('#bo-method').dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#bo-paper').value=p;document.querySelector('#bo-paper').dispatchEvent(new Event('input',{bubbles:true}));await new Promise(r=>setTimeout(r,250));out.push(m+'/'+p+': '+document.querySelectorAll('#page-grid .page-thumb').length+' pages, '+document.querySelectorAll('#cut-table tbody tr').length+' parts');}}return out;})()`);
 results.build.after = collect();
+// guide: widgets, live worked examples, progress, glossary
+await open('guide.html'); await sleep(1500);
+results.guide = collect();
+results.guide.state = await ev(`(async()=>{const wait=ms=>new Promise(r=>setTimeout(r,ms));const set=(id,v)=>{const e=document.getElementById(id);e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));};
+  const out={widgets:[...document.querySelectorAll('.widget')].filter(w=>w.querySelector('.stats, svg')).length,steps:[document.querySelectorAll('#ex-trainer-body .g-step').length,document.querySelectorAll('#ex-wing-body .g-step').length],terms:document.querySelectorAll('.g-term').length};
+  const auw=()=>[...document.querySelectorAll('#trainer-req .stat')].find(s=>/All-up weight/.test(s.textContent)).querySelector('.val').textContent;out.auw0=auw();
+  set('ex-trainer-span',1.45);await wait(900);out.auw1=auw();out.span1=[...document.querySelectorAll('#trainer-wing .stat')].find(s=>/Wingspan/.test(s.textContent)).querySelector('.val').textContent;
+  document.querySelector('[data-ex-reset=trainer]').click();await wait(500);out.auwBack=auw();
+  const cb=document.querySelector('[data-step="wing:req"]');cb.click();await wait(300);out.progress=document.querySelector('#ex-wing-body .g-progress b').textContent;
+  set('wc-cg',55);await wait(200);out.cgVerdict=document.querySelector('#w-cg .g-verdict').className;set('wc-cg',33.3);
+  set('gl-q','washout');await wait(200);out.gloss=document.querySelector('#gl-count').textContent;
+  out.fly=document.querySelector('#ex-wing-body a.btn.primary').getAttribute('href').slice(0,30);return out;})()`);
+await open('guide.html'); await sleep(1500); results.guide.persisted = await ev(`document.querySelector('#ex-wing-body .g-progress b').textContent`);
+await ev(`document.querySelector('[data-step="wing:req"]').click()`);
+results.guide.after = collect();
+await scrollTo('#ex-trainer'); await shot('guide-trainer');
 await size(360, 800);
-for (const f of ['rc-plane-calculator.html', 'designer.html', 'build.html']) {
+for (const f of ['rc-plane-calculator.html', 'designer.html', 'build.html', 'guide.html']) {
   await open(f, f === 'build.html' ? buildHash : '');
   results[f + '@360'] = await ev(`[document.documentElement.scrollWidth, [...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>362&&!e.closest('.table-scroll,.nav,.subnav,.ribbon,.sheet-preview,.mini-table,#rc-sprite')}).slice(0,6).map(e=>e.tagName+'#'+e.id+'.'+e.className)]`);
   await shot(f.replace('.html', '') + '-360');

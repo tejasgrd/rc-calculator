@@ -229,11 +229,12 @@ const SimModel = (() => {
     glider:   { name:'Powered glider', req:{ mission:'glider', preset:'chuck', span_m:1.5, stall_ms:null, payload_kg:0, flightMin:10, cells:'auto', material:'depron' }, airfoil:'naca6409', dihedral:8, mount:[6, -3.5] },
     aerobat:  { name:'3D aerobat', req:{ mission:'aerobatic', preset:'lowwing', span_m:0.9, stall_ms:null, payload_kg:0, flightMin:5, cells:3, material:'depron' }, airfoil:'naca0012', dihedral:0, sim:{ throws:{ ail:32, ele:30, rud:35 } }, mount:[-1, 3] },
   };
-  function builtinDesign(key){
-    const b = BUILTINS[key] || BUILTINS.trainer, af = Airfoil.get(b.airfoil);
-    const sz = sizeAircraft(Object.assign({ clmax:af.clmax }, b.req));
+  /** opts.req overrides the requirements (e.g. { span_m:1.4 }); the rest of the pipeline is identical. */
+  function builtinDesign(key, opts = {}){
+    const b = BUILTINS[key] || BUILTINS.trainer, af = Airfoil.get(b.airfoil), req = Object.assign({}, b.req, opts.req || {});
+    const sz = sizeAircraft(Object.assign({ clmax:af.clmax }, req));
     const geom = Object.assign({}, sz.geom, { washout:b.washout || 0, propRot:'cw', thrustDown:b.mount ? b.mount[0] : 0, thrustRight:b.mount ? b.mount[1] : 0 }, b.dihedral != null ? { dihedral:b.dihedral } : {}); // mount = suggestThrustAngles()
-    const design = { v:1, name:b.name, builtin:key, req:Object.assign({ keep250:false, budget:0, currency:'$' }, b.req), airfoilId:b.airfoil, customAirfoil:null, geom, auw:sz.auw,
+    const design = { v:1, name:b.name, builtin:key, req:Object.assign({ keep250:false, budget:0, currency:'$' }, req), airfoilId:b.airfoil, customAirfoil:null, geom, auw:sz.auw,
       sizing:{ breakdown:sz.breakdown, auw:sz.auw }, power:null, perf:{ etaProp:0.6, etaMotor:0.75, gear:false }, smTarget:0.1, cells:sz.cells, capacity_mAh:sz.capacity_mAh, sim:b.sim || null };
     const vc = sz.vc, best = matchPowerSystems({ motors:MOTOR_DB, cellsList:[sz.cells], props:PROPS_EXT, capacity_mAh:sz.capacity_mAh, targetPower:sz.P, cruise:vc, weightN:sz.auw * G, style:sz.style, limit:1 })[0];
     if (best) design.power = { motorId:best.motor.id, cells:best.cells, prop:{ d:best.prop.d, p:best.prop.p } };

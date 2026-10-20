@@ -64,6 +64,12 @@ done:
       Build page washer/spacer table and printable mount wedges; "Power response" test flight.
     files: ["assets/rc-sim-physics.js (forces, power test)", "assets/rc-sim-model.js (suggestThrustAngles, describeThrust)", "assets/designer.js", "rc-plane-calculator.html", "assets/build.js", "assets/rc-templates.js (mountShims, wedges)", "assets/rc-3d.js / rc-diagram.js (tilted motor, thrust arrows)", "assets/simulator.js"]
     verified: suggested angles cut the full-power swing by ≥ 40 % on the built-ins; trainer swings 28° left with a straight mount, 3° with the suggested one
+  - id: info-tooltips
+    summary: Hover/focus "i" buttons with detailed explanations for about 230 parameters on every page (shared glossary).
+    files: ["assets/rc-info.js", "assets/rc-style.css"]
+  - id: guide
+    summary: Guide/encyclopedia page with 12 fundamentals chapters (10 interactive widgets), two live worked Depron examples (trainer, flying wing) with progress tracking and links into Designer/Build/Simulator, and a searchable A–Z glossary.
+    files: ["guide.html", "assets/guide.js"]
 
 next: []
 

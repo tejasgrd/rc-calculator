@@ -7,6 +7,7 @@ An offline toolkit for designing, building and flying RC planes. Everything runs
 | `rc-plane-calculator.html` | Calculator: power system, wing loading and flight-time estimates, with explanations |
 | `designer.html` | Aircraft Designer in 9 steps: sizing, airfoil, geometry, stability, wing analysis, performance, power system, 3D model, save and compare |
 | `build.html` | Printable build templates (foam/Depron or balsa; A4, A5 or Letter paper) and a parts list |
+| `guide.html` | Build guide and encyclopedia: every fundamental with live widgets, two worked Depron examples (trainer and flying wing) built step by step with the tools, and an A–Z glossary |
 | `simulator.html` | Flight simulator (three.js): fly your designs, lessons with an instructor, weather, flight-log calibration, replay |
 
 There's no build step, no server and no install. The pages are plain HTML with classic scripts, and three.js is already bundled in `assets/vendor/`.
@@ -18,7 +19,7 @@ There's no build step, no server and no install. The pages are plain HTML with c
    git clone <your-repo-url> rc-calc
    ```
    You can also just copy the folder, for example from a USB stick or a zip file.
-2. Open `rc-plane-calculator.html` (or any other page) by double-clicking it. You can also drag it into a browser window.
+2. Open `rc-plane-calculator.html` (or any other page; new builders should start with `guide.html`) by double-clicking it. You can also drag it into a browser window.
 
 That's it. It works without internet, straight from disk (`file://`).
 
@@ -44,7 +45,7 @@ Then browse to `http://<this-computer's-IP>:8000/rc-plane-calculator.html`.
 
 ## Where your data is kept
 
-Everything stays in the browser on that machine; nothing is uploaded.
+Everything stays in the browser on that machine; nothing is uploaded. The guide's step checkboxes and example tweaks use the key `rcGuide.v1`.
 
 - **localStorage** (keys `rcCalc.v1`, `rcDesign.v1`, `rcDesigns.v1`, `rcMotors.v1`, `rcParts.v1`, `rcBuild.v1` and `rcSim.*`): settings, designs, lesson progress and controller mappings.
 - **IndexedDB** (database `rcSim`): imported 3D models.
@@ -77,14 +78,15 @@ On Linux, use the distribution's package (Debian/Ubuntu: `sudo apt install nodej
 ## Project layout
 
 ```
-*.html                     the four pages
+*.html                     the five pages
 assets/rc-style.css        shared styles (light and dark)
 assets/rc-common.js        shared page helpers (storage, toasts, links)
 assets/rc-core.js          units, calculator physics, air density, geometry
 assets/rc-aero.js          airfoils, sizing, stability, lifting line, performance, motor matching
 assets/rc-diagram.js       2D drawings      assets/rc-3d.js        3D model of a design
 assets/rc-templates.js     build templates  assets/rc-charts.js    charts
-assets/designer.js, build.js, simulator.js        page scripts
+assets/designer.js, build.js, simulator.js, guide.js  page scripts
+assets/rc-info.js          glossary + "i" tooltips used on every page
 assets/rc-sim-*.js         simulator: model, physics, world, input, import, calibration, lessons
 assets/vendor/             three.js r186 bundle (MIT, see THREE-LICENSE.txt)
 tests/                     test runners and fixtures

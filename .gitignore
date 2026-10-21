@@ -21,3 +21,4 @@ desktop.ini
 !tests/fixtures/*.log
 .env
 .env.*
+CONTEXT.md
